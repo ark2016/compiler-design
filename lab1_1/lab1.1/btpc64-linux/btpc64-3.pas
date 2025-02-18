@@ -2447,19 +2447,19 @@ end;
 
 procedure OCTestEAXEAX;
 begin
- EmitByte($48); EmitByte($85); EmitByte($c0); {{ TEST EAX,EAX }
+ EmitByte($48); EmitByte($85); EmitByte($c0); { TEST EAX,EAX }
  LastOutputCodeValue:=locTestEAXEAX;
 end;
 
 procedure OCNegDWordPtrESP;
 begin
- EmitByte($48); EmitByte($f7); EmitByte($1c); EmitByte($24); (* NEG DWORD PTR {ESP} *)
+ EmitByte($48); EmitByte($f7); EmitByte($1c); EmitByte($24); (* NEG DWORD PTR ESP *)
  LastOutputCodeValue:=locNegDWordPtrESP;
 end;
 
 procedure OCMovEAXDWordPtrESP;
 begin
- EmitByte($48); EmitByte($8b); EmitByte($04); EmitByte($24); (* MOV EAX,DWORD PTR {ESP} *)
+ EmitByte($48); EmitByte($8b); EmitByte($04); EmitByte($24); (* MOV EAX,DWORD PTR ESP *)
  LastOutputCodeValue:=locMovEAXDWordPtrESP;
 end;
 
@@ -2504,7 +2504,7 @@ begin
   case Opcode of
    OPAdd:begin
     OCPopEAX;
-    EmitByte($48); EmitByte($01); EmitByte($04); EmitByte($24); (* ADD DWORD PTR {ESP},EAX *)
+    EmitByte($48); EmitByte($01); EmitByte($04); EmitByte($24); (* ADD DWORD PTR ESP,EAX *)
     LastOutputCodeValue:=locNone;
    end;
    OPNeg:begin
@@ -2531,7 +2531,7 @@ begin
     OCPushEDX;
    end;
    OPDiv2:begin
-    EmitByte($48); EmitByte($d1); EmitByte($3c); EmitByte($24); (* SAR DWORD PTR {ESP},1 *)
+    EmitByte($48); EmitByte($d1); EmitByte($3c); EmitByte($24); (* SAR DWORD PTR ESP,1 *)
     LastOutputCodeValue:=locNone;
    end;
    OPRem2:begin
