@@ -752,7 +752,7 @@ begin
   if CurrentChar='*' then begin
    ReadChar;
    LastChar:='-';
-   while (CurrentChar<>#0) and not ((CurrentChar=')') and (LastChar='*')) do begin
+   while (CurrentChar<>#0) and not (((CurrentChar=')') and (LastChar='*')) or (CurrentChar='}')) do begin
     LastChar:=CurrentChar;
     ReadChar;
    end;
@@ -780,7 +780,10 @@ begin
   ReadChar;
   CurrentSymbol:=TokSemi;
  end else if CurrentChar='{' then begin
-  while (CurrentChar<>'}') and (CurrentChar<>#0) do begin
+  ReadChar;
+  LastChar:='-';
+  while (CurrentChar<>#0) and not (((CurrentChar=')') and (LastChar='*')) or (CurrentChar='}')) do begin
+   LastChar:=CurrentChar;
    ReadChar;
   end;
   ReadChar;
