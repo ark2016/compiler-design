@@ -752,6 +752,8 @@ begin
   if CurrentChar='*' then begin
    ReadChar;
    LastChar:='-';
+   {it wotks*)
+   (*it works}
    while (CurrentChar<>#0) and not (((CurrentChar=')') and (LastChar='*')) or (CurrentChar='}')) do begin
     LastChar:=CurrentChar;
     ReadChar;
