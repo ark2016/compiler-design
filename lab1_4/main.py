@@ -266,10 +266,9 @@ class DFALexer:
 
 if __name__ == "__main__":
     # Пример теста
-    sample_text = """open 123 close
-    << 'some string with \\' quote' >> openx
-c close123
-"""
+    file_path = "input.txt"
+    with open(file_path, 'r') as file:
+        sample_text = file.read()
     lexer = DFALexer(sample_text)
     all_tokens = lexer.tokenize_all()
     for token in all_tokens:

@@ -1,0 +1,3 @@
+open 123 close
+    << 'some string with \\' quote' >> openx
+c close123
