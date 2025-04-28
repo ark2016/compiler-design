@@ -1,0 +1,206 @@
+digraph {
+  node [shape=ellipse];
+  n0 [label="PROG"];
+  n1 [label="PROG"];
+  n89 [label="EOF"];
+  n2 [label="AXIOM"];
+  n9 [label="GRAMMAR"];
+  n3 [label="["];
+  n4 [label="axiom"];
+  n5 [label="["];
+  n6 [label="E"];
+  n7 [label="]"];
+  n8 [label="]"];
+  n10 [label="RULES"];
+  n21 [label="GRAMMAR"];
+  n11 [label="["];
+  n12 [label="E"];
+  n13 [label="RULE"];
+  n18 [label="RULE_TAIL"];
+  n20 [label="]"];
+  n22 [label="RULES"];
+  n39 [label="GRAMMAR"];
+  n14 [label="["];
+  n15 [label="T"];
+  n16 [label="E'"];
+  n17 [label="]"];
+  n19 [label="ε"];
+  n23 [label="["];
+  n24 [label="E'"];
+  n25 [label="RULE"];
+  n31 [label="RULE_TAIL"];
+  n38 [label="]"];
+  n40 [label="RULES"];
+  n51 [label="GRAMMAR"];
+  n26 [label="["];
+  n27 [label="+"];
+  n28 [label="T"];
+  n29 [label="E'"];
+  n30 [label="]"];
+  n32 [label="RULE"];
+  n36 [label="RULE_TAIL"];
+  n41 [label="["];
+  n42 [label="T"];
+  n43 [label="RULE"];
+  n48 [label="RULE_TAIL"];
+  n50 [label="]"];
+  n52 [label="RULES"];
+  n69 [label="GRAMMAR"];
+  n33 [label="["];
+  n34 [label="ε"];
+  n35 [label="]"];
+  n37 [label="ε"];
+  n44 [label="["];
+  n45 [label="F"];
+  n46 [label="T'"];
+  n47 [label="]"];
+  n49 [label="ε"];
+  n53 [label="["];
+  n54 [label="T'"];
+  n55 [label="RULE"];
+  n61 [label="RULE_TAIL"];
+  n68 [label="]"];
+  n70 [label="RULES"];
+  n87 [label="GRAMMAR"];
+  n56 [label="["];
+  n57 [label="*"];
+  n58 [label="F"];
+  n59 [label="T'"];
+  n60 [label="]"];
+  n62 [label="RULE"];
+  n66 [label="RULE_TAIL"];
+  n71 [label="["];
+  n72 [label="F"];
+  n73 [label="RULE"];
+  n77 [label="RULE_TAIL"];
+  n86 [label="]"];
+  n88 [label="ε"];
+  n63 [label="["];
+  n64 [label="ε"];
+  n65 [label="]"];
+  n67 [label="ε"];
+  n74 [label="["];
+  n75 [label="n"];
+  n76 [label="]"];
+  n78 [label="RULE"];
+  n84 [label="RULE_TAIL"];
+  n79 [label="["];
+  n80 [label="("];
+  n81 [label="E"];
+  n82 [label=")"];
+  n83 [label="]"];
+  n85 [label="ε"];
+  n0 -> n1;
+  n0 -> n89;
+  n1 -> n2;
+  n1 -> n9;
+  n2 -> n3;
+  n2 -> n4;
+  n2 -> n5;
+  n2 -> n6;
+  n2 -> n7;
+  n2 -> n8;
+  n9 -> n10;
+  n9 -> n21;
+  n10 -> n11;
+  n10 -> n12;
+  n10 -> n13;
+  n10 -> n18;
+  n10 -> n20;
+  n21 -> n22;
+  n21 -> n39;
+  n13 -> n14;
+  n13 -> n15;
+  n13 -> n16;
+  n13 -> n17;
+  n18 -> n19;
+  n22 -> n23;
+  n22 -> n24;
+  n22 -> n25;
+  n22 -> n31;
+  n22 -> n38;
+  n39 -> n40;
+  n39 -> n51;
+  n25 -> n26;
+  n25 -> n27;
+  n25 -> n28;
+  n25 -> n29;
+  n25 -> n30;
+  n31 -> n32;
+  n31 -> n36;
+  n40 -> n41;
+  n40 -> n42;
+  n40 -> n43;
+  n40 -> n48;
+  n40 -> n50;
+  n51 -> n52;
+  n51 -> n69;
+  n32 -> n33;
+  n32 -> n34;
+  n32 -> n35;
+  n36 -> n37;
+  n43 -> n44;
+  n43 -> n45;
+  n43 -> n46;
+  n43 -> n47;
+  n48 -> n49;
+  n52 -> n53;
+  n52 -> n54;
+  n52 -> n55;
+  n52 -> n61;
+  n52 -> n68;
+  n69 -> n70;
+  n69 -> n87;
+  n55 -> n56;
+  n55 -> n57;
+  n55 -> n58;
+  n55 -> n59;
+  n55 -> n60;
+  n61 -> n62;
+  n61 -> n66;
+  n70 -> n71;
+  n70 -> n72;
+  n70 -> n73;
+  n70 -> n77;
+  n70 -> n86;
+  n87 -> n88;
+  n62 -> n63;
+  n62 -> n64;
+  n62 -> n65;
+  n66 -> n67;
+  n73 -> n74;
+  n73 -> n75;
+  n73 -> n76;
+  n77 -> n78;
+  n77 -> n84;
+  n78 -> n79;
+  n78 -> n80;
+  n78 -> n81;
+  n78 -> n82;
+  n78 -> n83;
+  n84 -> n85;
+  { rank=same; n1 -> n89 [style=invis] }
+  { rank=same; n2 -> n9 [style=invis] }
+  { rank=same; n3 -> n4 -> n5 -> n6 -> n7 -> n8 [style=invis] }
+  { rank=same; n10 -> n21 [style=invis] }
+  { rank=same; n11 -> n12 -> n13 -> n18 -> n20 [style=invis] }
+  { rank=same; n22 -> n39 [style=invis] }
+  { rank=same; n14 -> n15 -> n16 -> n17 [style=invis] }
+  { rank=same; n23 -> n24 -> n25 -> n31 -> n38 [style=invis] }
+  { rank=same; n40 -> n51 [style=invis] }
+  { rank=same; n26 -> n27 -> n28 -> n29 -> n30 [style=invis] }
+  { rank=same; n32 -> n36 [style=invis] }
+  { rank=same; n41 -> n42 -> n43 -> n48 -> n50 [style=invis] }
+  { rank=same; n52 -> n69 [style=invis] }
+  { rank=same; n33 -> n34 -> n35 [style=invis] }
+  { rank=same; n44 -> n45 -> n46 -> n47 [style=invis] }
+  { rank=same; n53 -> n54 -> n55 -> n61 -> n68 [style=invis] }
+  { rank=same; n70 -> n87 [style=invis] }
+  { rank=same; n56 -> n57 -> n58 -> n59 -> n60 [style=invis] }
+  { rank=same; n62 -> n66 [style=invis] }
+  { rank=same; n71 -> n72 -> n73 -> n77 -> n86 [style=invis] }
+  { rank=same; n63 -> n64 -> n65 [style=invis] }
+  { rank=same; n74 -> n75 -> n76 [style=invis] }
+  { rank=same; n78 -> n84 [style=invis] }
+  { rank=same; n79 -> n80 -> n81 -> n82 -> n83 [style=invis] }
+}
