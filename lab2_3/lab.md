@@ -31,22 +31,22 @@ WS
     ::= [ \t\r\n]+           // пробельные символы
 
 AXIOM
-    ::= WS* '[' WS* 'axiom' WS* '[' WS* IDENT WS* ']' WS* ']' WS*
+    ::=  '['  'axiom'  '['  IDENT  ']'  ']' 
 
 GRAMMAR
-    ::= (WS* RULES WS*)*
+    ::= ( RULES )*
 
 RULES
-    ::= WS* '[' WS* IDENT
-               ( WS* RULE )+    // одно или более правило
-           WS* ']' WS*
+    ::=  '['  IDENT
+               (  RULE )+    // одно или более правило
+            ']' 
 
 RULE
-    ::= WS* '[' WS* OP  WS+ IDENT WS+ IDENT WS* ']' WS*   // [ OP IDENT IDENT ]
-      | WS* '[' WS* IDENT WS+ IDENT           WS* ']' WS*   // [ IDENT IDENT ]
-      | WS* '[' WS*      ']'                  WS*           // [ ]
-      | WS* '[' WS*      'n'  WS*            ']' WS*       // [n]
-      | WS* '[' WS* '(' WS* IDENT WS* ')'    WS* ']' WS*   // [( IDENT )]
+    ::=  '['  OP   IDENT  IDENT  ']'    // [ OP IDENT IDENT ]
+      |  '['  IDENT  IDENT            ']'    // [ IDENT IDENT ]
+      |  '['       ']'                             // [ ]
+      |  '['       'n'              ']'        // [n]
+      |  '['  '('  IDENT  ')'     ']'    // [( IDENT )]
 
 OP
     ::= '+' | '-' | '*' | '/'

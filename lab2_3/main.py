@@ -9,24 +9,17 @@ Token = namedtuple('Token', ['type', 'value', 'line', 'col'])
 def lex(text):
     keywords = {'axiom', 'n'}
     token_specification = [
-        # Комментарий (от '%' до конца строки, с опциональным переносом строки)
         ('COMMENT',   r'%[^\n]*\n?'),
-        ('LBRACK',    r'\['),                # [
-        ('RBRACK',    r'\]'),                # ]
-        ('LPAREN',    r'\('),                # (
-        ('RPAREN',    r'\)'),                # )
-        # Операторы
-        ('OP',        r'[+\-*/]'),           # +,-,*,/
-        # Идентификаторы (латинская буква, затем буквы/апострофы)
+        ('LBRACK',    r'\['),         
+        ('RBRACK',    r'\]'),         
+        ('LPAREN',    r'\('),  
+        ('RPAREN',    r'\)'),            
+        ('OP',        r'[+\-*/]'),           
         ('IDENT',     r'[A-Za-z][A-Za-z\']*'),
-        # Перенос строки (обрабатываем отдельно для подсчета строк)
         ('NEWLINE',   r'\n'),
-        # Пробельные символы (пропускаем: пробел, табуляция, возврат каретки)
         ('SKIP',      r'[ \t\r]+'),
-        # Любой другой символ (ошибка лексического анализа)
         ('MISMATCH',  r'.'),
     ]
-    # Комбинированное регулярное выражение с именованными группами
     tok_regex = '|'.join('(?P<%s>%s)' % pair for pair in token_specification)
     line_num = 1 # Текущий номер строки
     line_start = 0 # Индекс начала текущей строки во всем тексте
@@ -44,7 +37,7 @@ def lex(text):
                    line_num += value.count('\n')
                    line_start = mo.end() 
             elif kind == 'NEWLINE':
-                line_start = mo.end() 
+                line_start = mo.end() #
                 line_num += 1
             elif kind == 'SKIP':
                 # Пропускаем пробельные символы
@@ -71,14 +64,14 @@ def lex(text):
     yield Token('EOF', '', line_num, eof_col)
 
 class Node:
-    _ids = 0 # Счетчик для генерации уникальных ID узлов для Graphviz
+    _ids = 0 
     def __init__(self, symbol, token=None):
         self.symbol = symbol 
-        self.token = token   
-        self.children = []  
+        self.token = token 
+        self.children = [] 
         # Уникальный ID для узла (используется в Graphviz)
         self.id = f"n{Node._ids}"
-        Node._ids += 1
+        Node._ids += 1 
 
     def add_child(self, node):
         if node:
@@ -116,7 +109,7 @@ class PredictiveParser:
         else:
             token_info = "end of input"
             pos_info = ""
-        stack_info = [s[0] for s in reversed(self.stack)]
+        stack_info = [s[0] for s in reversed(self.stack)] 
         raise ParseError(f"Syntax Error: Expected {expected}, but found {token_info} {pos_info}. Stack context (top->): {stack_info}")
 
     def _match(self, expected_token_type, parent_node_for_result):
@@ -147,189 +140,155 @@ class PredictiveParser:
         Node._ids = 0
         self.root_node = Node("PROG")
         self.stack = [('EOF', None), ('PROG', self.root_node)]
-        
+
         while self.stack:
-            top_symbol, parent_for_result = self.stack.pop()
-
-            if top_symbol == self.current_token.type:
-                self._match(top_symbol, parent_for_result)
-                continue
-
-            # --- EOF Match ---
+            stack_item = self.stack.pop()
+            top_symbol = stack_item[0]
+            parent_for_result = stack_item[1]
             if top_symbol == 'EOF':
                  if self.current_token.type == 'EOF':
                     print("Parsing successful!")
-                    eof_node = Node('EOF', token=self.current_token)
                     if self.root_node:
-                         self.root_node.add_child(eof_node)
+                         self.root_node.add_child(Node('EOF', token=self.current_token))
                     else:
                          print("Warning: Cannot add EOF node, root_node is None.", file=sys.stderr)
                     return self.root_node
                  else:
                     self._error("end of input (EOF)")
 
-            # --- Non-Terminal ---
+            elif top_symbol in ['LBRACK', 'RBRACK', 'LPAREN', 'RPAREN', 'OP', 'IDENT', 'KW_AXIOM', 'KW_N']: 
+                self._match(top_symbol, parent_for_result) 
+                continue
             current_node = Node(top_symbol)
             if parent_for_result:
                 parent_for_result.add_child(current_node)
             elif top_symbol == 'PROG':
-                current_node = self.root_node
+                 current_node = self.root_node
             else:
-                print(f"Warning: Creating node for {top_symbol} without a parent during expansion.")
+                 print(f"Warning: Creating node for {top_symbol} without a parent during expansion.")
 
             lookahead_type = self.current_token.type
 
-            # --- Реализация логики таблицы предсказывающего разбора (через if/elif) ---
-
-            # --- Строка таблицы для нетерминала PROG ---
-            # PROG ::= (COMMENT | WS)* AXIOM (COMMENT | WS)* GRAMMAR (COMMENT | WS)*
+            # PROG ::= AXIOM GRAMMAR EOF
             if top_symbol == 'PROG':
-                 # В таблице: M[PROG, '['] = -> AXIOM GRAMMAR
-                 # Проверяем столбец: ожидаем '[' (начало AXIOM)
+                 # Столбец: LBRACK (т.к. AXIOM начинается с '[')
                  if lookahead_type == 'LBRACK':
-                     # Применяем правило PROG -> AXIOM GRAMMAR
-                     # Помещаем символы правой части правила в стек в обратном порядке
-                     # Указываем `current_node` (узел PROG) как родителя для AXIOM и GRAMMAR
+                     # Применяем правило PROG -> AXIOM GRAMMAR EOF
+                     self.stack.append(('EOF', None)) 
                      self.stack.append(('GRAMMAR', current_node))
                      self.stack.append(('AXIOM', current_node))
                  else:
-                     # Ошибка: для PROG возможно только начать с AXIOM ([)
                      self._error("start of AXIOM ('[')")
 
-            # --- Строка таблицы для нетерминала AXIOM ---
-            # AXIOM ::= WS* '[' WS* 'axiom' WS* '[' WS* IDENT WS* ']' WS* ']' WS*
+            # AXIOM ::= '[' KW_AXIOM '[' IDENT ']' ']'
             elif top_symbol == 'AXIOM':
-                 # В таблице: M[AXIOM, '['] = -> [ axiom [ IDENT ] ]
-                 # Проверяем столбец: ожидаем '['
                  if lookahead_type == 'LBRACK':
                      # Применяем правило AXIOM -> [ axiom [ IDENT ] ]
-                     # Помещаем символы правой части в стек в обратном порядке.
-                     # parent_for_result для терминалов и нетерминалов RHS - это `current_node` (узел AXIOM).
-                     self.stack.append(('RBRACK', current_node))      # ]
-                     self.stack.append(('RBRACK', current_node))      # ]
-                     self.stack.append(('IDENT', current_node))       # IDENT (тип токена)
-                     self.stack.append(('LBRACK', current_node))      # [
-                     self.stack.append(('KW_AXIOM', current_node))    # axiom (тип токена)
-                     self.stack.append(('LBRACK', current_node))      # [
-                 else:
-                     # Ошибка: AXIOM должен начинаться с '['
-                     self._error("'[' to start AXIOM definition")
-
-            # --- Строка таблицы для нетерминала GRAMMAR ---
-            # GRAMMAR ::= (WS* RULES WS*)*
-            # Преобразовано для LL(1): GRAMMAR ::= RULES GRAMMAR | ε
-            elif top_symbol == 'GRAMMAR':
-                 # M[GRAMMAR, '['] = -> RULES GRAMMAR
-                 # Проверяем столбец: ожидаем '[' (начало RULES)
-                 if lookahead_type == 'LBRACK':
-                     # GRAMMAR -> RULES GRAMMAR
-                     # Помещаем в стек. current_node (узел GRAMMAR) - родитель для RULES и GRAMMAR.
-                     self.stack.append(('GRAMMAR', current_node)) # Рекурсивный вызов GRAMMAR
-                     self.stack.append(('RULES', current_node))   # Начало RULES
-                 # M[GRAMMAR, EOF] = -> ε
-                 # Проверяем столбец: ожидаем EOF (конец файла, Follow(GRAMMAR))
-                 elif lookahead_type == 'EOF':
-                     # Применяем правило GRAMMAR -> ε
-                     # Удаляем GRAMMAR со стека (уже сделали pop). Добавляем узел ε в дерево.
-                     current_node.add_child(Node('ε'))
-                 else:
-                     # Ошибка: для GRAMMAR возможно либо начать RULES ([), либо закончиться (EOF)
-                     self._error("start of RULES ('[') or EOF")
-
-            # --- Строка таблицы для нетерминала RULES ---
-            # RULES ::= WS* '[' WS* IDENT ( WS* RULE )+ WS* ']' WS*
-            # Преобразовано для LL(1): RULES ::= '[' IDENT RULE RULE_TAIL ']'
-            elif top_symbol == 'RULES':
-                 # В таблице: M[RULES, '['] = -> [ IDENT RULE RULE_TAIL ]
-                 # Проверяем столбец: ожидаем '['
-                 if lookahead_type == 'LBRACK':
-                     # Применяем правило RULES -> [ IDENT RULE RULE_TAIL ]
                      self.stack.append(('RBRACK', current_node))   # ]
-                     self.stack.append(('RULE_TAIL', current_node)) # RULE_TAIL (для обработки RULE+)
-                     self.stack.append(('RULE', current_node))      # Первый RULE
-                     self.stack.append(('IDENT', current_node))     # IDENT
+                     self.stack.append(('RBRACK', current_node))   # ]
+                     self.stack.append(('IDENT', current_node))    # IDENT
+                     self.stack.append(('LBRACK', current_node))   # [
+                     self.stack.append(('KW_AXIOM', current_node)) # KW_AXIOM
                      self.stack.append(('LBRACK', current_node))   # [
                  else:
-                     # Ошибка: RULES должен начинаться с '['
-                     self._error("'[' to start RULES definition")
+                     self._error("'[' to start AXIOM definition")
 
-            # --- Строка таблицы для нетерминала RULE_TAIL ---
-            # RULE_TAIL ::= RULE RULE_TAIL | ε (для обработки RULE+)
-            elif top_symbol == 'RULE_TAIL':
-                 # В таблице: M[RULE_TAIL, '['] = -> RULE RULE_TAIL
-                 # Проверяем столбец: ожидаем '[' (начало еще одного RULE)
+            # GRAMMAR ::= RULE_DEFINITION GRAMMAR | ε
+            elif top_symbol == 'GRAMMAR':
                  if lookahead_type == 'LBRACK':
-                     # Применяем правило RULE_TAIL -> RULE RULE_TAIL
-                     self.stack.append(('RULE_TAIL', current_node)) # Рекурсивный вызов RULE_TAIL
-                     self.stack.append(('RULE', current_node))      # Очередной RULE
-                 # В таблице: M[RULE_TAIL, ']'] = -> ε
-                 # Проверяем столбец: ожидаем ']' (конец RULES, Follow(RULE_TAIL))
+                     # Применяем правило GRAMMAR -> RULE_DEFINITION GRAMMAR
+                     self.stack.append(('GRAMMAR', current_node)) 
+                     self.stack.append(('RULE_DEFINITION', current_node)) 
+                 elif lookahead_type == 'EOF':
+                     # Применяем правило GRAMMAR -> ε
+                     current_node.add_child(Node('ε'))
+                 else:
+                     self._error("start of RULE_DEFINITION ('[') or EOF")
+
+            # RULE_DEFINITION ::= '[' IDENT RULE_BODIES ']'
+            elif top_symbol == 'RULE_DEFINITION':
+                 if lookahead_type == 'LBRACK':
+                     # Применяем правило RULE_DEFINITION -> [ IDENT RULE_BODIES ]
+                     self.stack.append(('RBRACK', current_node))      # ]
+                     self.stack.append(('RULE_BODIES', current_node)) # RULE_BODIES
+                     self.stack.append(('IDENT', current_node))       # IDENT (тип токена LHS нетерминала)
+                     self.stack.append(('LBRACK', current_node))      # [
+                 else:
+                     self._error("'[' to start RULE_DEFINITION")
+
+            # RULE_BODIES ::= RULE_BODY RULE_BODIES_TAIL
+            # RULE_BODIES_TAIL ::= RULE_BODY RULE_BODIES_TAIL | ε
+            elif top_symbol == 'RULE_BODIES':
+                 if lookahead_type == 'LBRACK':
+                     # Применяем правило RULE_BODIES -> RULE_BODY RULE_BODIES_TAIL
+                     self.stack.append(('RULE_BODIES_TAIL', current_node)) 
+                     self.stack.append(('RULE_BODY', current_node))     
+                 else:
+                      self._error("'[' to start RULE_BODY") 
+
+            # RULE_BODIES_TAIL ::= RULE_BODY RULE_BODIES_TAIL | ε
+            elif top_symbol == 'RULE_BODIES_TAIL':
+                 if lookahead_type == 'LBRACK':
+                     # Применяем правило RULE_BODIES_TAIL -> RULE_BODY RULE_BODIES_TAIL
+                     self.stack.append(('RULE_BODIES_TAIL', current_node)) 
+                     self.stack.append(('RULE_BODY', current_node))      
                  elif lookahead_type == 'RBRACK':
-                     # Применяем правило RULE_TAIL -> ε
-                     current_node.add_child(Node('ε')) # Добавляем узел ε
+                     # Применяем правило RULE_BODIES_TAIL -> ε
+                     current_node.add_child(Node('ε')) 
                  else:
-                     # Ошибка: RULE_TAIL может начаться с RULE ([) или закончиться (])
-                     self._error("start of another RULE ('[') or end of RULES (']')")
+                     self._error("start of another RULE_BODY ('[') or end of RULE_DEFINITION (']')")
 
-            # RULE ::= WS* '[' WS* OP WS+ IDENT WS+ IDENT WS* ']' WS*
-            #      | WS* '[' WS* IDENT WS+ IDENT WS* ']' WS*
-            #      | WS* '[' WS* ']' WS*
-            #      | WS* '[' WS* 'n' WS* ']' WS*
-            #      | WS* '[' WS* '(' WS* IDENT WS* ')' WS* ']' WS*
-            elif top_symbol == 'RULE':
-                 # Все правила RULE начинаются с '['. Это конфликт для LL(1).
-                 # В таблице: M[RULE, '['] = См. Особое правило
-                 # Проверяем столбец: ожидаем '['
+            # RULE_BODY ::= '[' RHS_SYMBOLS ']'
+            elif top_symbol == 'RULE_BODY':
                  if lookahead_type == 'LBRACK':
-                     # --- Шаги Особого правила для M[RULE, LBRACK]: ---
-                     # 1. Сопоставить и потребить терминал '['. Он добавляется как дочерний к текущему узлу RULE.
-                     self._match('LBRACK', current_node)
-                     # 2. Посмотреть на *следующий* токен (после потребленного '['). Это второй токен предпросмотра.
-                     token_after_lbrack_type = self.current_token.type
-                     # 3. Все правила RULE заканчиваются на ']', добавляем его в стек первым (в обратном порядке).
-                     self.stack.append(('RBRACK', current_node))
-
-                     # 4. На основе типа токена *после* '[' решаем, какую правую часть правила RULE выбрать и добавить в стек.
-                     # Случай: t_next == OP -> [ OP IDENT IDENT ]
-                     if token_after_lbrack_type == 'OP':
-                          self.stack.append(('IDENT', current_node))
-                          self.stack.append(('IDENT', current_node))
-                          self.stack.append(('OP', current_node)) # OP - это тип терминала
-                     # Случай: t_next == IDENT -> [ IDENT IDENT ]
-                     elif token_after_lbrack_type == 'IDENT':
-                          self.stack.append(('IDENT', current_node))
-                          self.stack.append(('IDENT', current_node))
-                     # Случай: t_next == RBRACK -> [ ] (пустое правило)
-                     elif token_after_lbrack_type == 'RBRACK':
-                          # Правая часть пустая, кроме '[' и ']', которые уже обработаны/в стеке.
-                          # Добавляем узел ε для обозначения пустого тела правила.
-                          current_node.add_child(Node('ε'))
-                     # Случай: t_next == KW_N -> [ n ]
-                     elif token_after_lbrack_type == 'KW_N':
-                          self.stack.append(('KW_N', current_node)) # KW_N - тип терминала
-                     # Случай: t_next == LPAREN -> [ ( IDENT ) ]
-                     elif token_after_lbrack_type == 'LPAREN':
-                           self.stack.append(('RPAREN', current_node)) # ) - тип терминала
-                           self.stack.append(('IDENT', current_node))  # IDENT - тип терминала
-                           self.stack.append(('LPAREN', current_node)) # ( - тип терминала
-                     else:
-                          # Ошибка: неожидаемый токен после '[' внутри RULE
-                          self._error("OP, IDENT, ']', 'n', or '(' inside RULE definition")
+                     # Применяем правило RULE_BODY -> [ RHS_SYMBOLS ]
+                     self.stack.append(('RBRACK', current_node))     # ]
+                     self.stack.append(('RHS_SYMBOLS', current_node)) # RHS_SYMBOLS
+                     self.stack.append(('LBRACK', current_node))     # [
                  else:
-                     # Ошибка: RULE должен начинаться с '['
-                     self._error("'[' to start RULE definition")
+                     self._error("'[' to start RULE_BODY")
 
-            # --- Обработка символов, не покрытых таблицей (резервная ошибка) ---
+            # RHS_SYMBOLS ::= SYMBOL RHS_SYMBOLS | ε
+            elif top_symbol == 'RHS_SYMBOLS':
+                 if lookahead_type in ['IDENT', 'OP', 'LPAREN', 'RPAREN', 'KW_N']:
+                     # Применяем правило RHS_SYMBOLS -> SYMBOL RHS_SYMBOLS
+                     self.stack.append(('RHS_SYMBOLS', current_node))
+                     self.stack.append(('SYMBOL', current_node))      
+                 elif lookahead_type == 'RBRACK':
+                     current_node.add_child(Node('ε')) 
+                 else:
+                     self._error("IDENT, OP, '(', ')', 'n', or ']' inside RHS_SYMBOLS")
+
+            # SYMBOL ::= IDENT | OP | LPAREN | RPAREN | KW_N
+            elif top_symbol == 'SYMBOL':
+                 # Столбцы: IDENT, OP, LPAREN, RPAREN, KW_N
+                 if lookahead_type == 'IDENT':
+                     # Применяем правило SYMBOL -> IDENT
+                     self.stack.append(('IDENT', current_node))
+                 elif lookahead_type == 'OP':
+                     # Применяем правило SYMBOL -> OP
+                     self.stack.append(('OP', current_node)) 
+                 elif lookahead_type == 'LPAREN':
+                     # Применяем правило SYMBOL -> LPAREN
+                     self.stack.append(('LPAREN', current_node)) 
+                 elif lookahead_type == 'RPAREN':
+                     # Применяем правило SYMBOL -> RPAREN
+                     self.stack.append(('RPAREN', current_node)) 
+                 elif lookahead_type == 'KW_N':
+                     # Применяем правило SYMBOL -> KW_N
+                     self.stack.append(('KW_N', current_node)) 
+                 else:
+                      # Ошибка: Ожидался один из символов RHS
+                      self._error("IDENT, OP, '(', ')', or 'n'")
+
             else:
                  self._error(f"processing unknown stack symbol '{top_symbol}' with lookahead '{lookahead_type}'")
-
-        # --- Проверки после завершения цикла ---
-        # Если стек пуст, но остались токены во входном потоке (кроме EOF)
         if self.current_token.type != 'EOF':
              self._error("end of input (EOF) - unexpected tokens remain")
         else:
-             print("Warning: Parsing loop finished, but EOF condition wasn't met as expected inside loop.", file=sys.stderr)
-             return None 
+             print("Warning: Parser loop ended in an unexpected state.", file=sys.stderr)
+             return None
+
 
 def generate_dot(root_node):
     if not root_node:
