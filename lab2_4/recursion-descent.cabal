@@ -1,0 +1,20 @@
+cabal-version:       2.4
+name:                recursion-descent
+version:             0.1.0.0
+synopsis:            Recursive descent parser for Oberon subset
+description:         Lab 2.4 - Recursive descent parser implementation
+license:             BSD-3-Clause
+author:              Student
+maintainer:          example@example.com
+category:            Compiler
+build-type:          Simple
+
+executable oberon-parser
+  main-is:             Main.hs
+  other-modules:       Lexer
+                     , Parser
+                     , AST
+  build-depends:       base ^>=4.14.0.0
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -Wall 
