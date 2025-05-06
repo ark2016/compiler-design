@@ -2,7 +2,7 @@ module Parser where
 
 import Data.Maybe (maybeToList)
 import AST
-import Lexer (Token(..), Located(..))
+import Lexer (Token(..))
 import Control.Monad.State
 import Control.Monad.Except
 
