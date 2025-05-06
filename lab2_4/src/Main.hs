@@ -4,7 +4,7 @@ import System.Environment (getArgs)
 import System.IO (readFile)
 import System.Exit (exitFailure)
 import Data.Char (isSpace)
-import Data.List (isPrefixOf, isInfixOf, tails, findIndex)
+import Data.List (isPrefixOf, isInfixOf, tails, findIndex, nub, sortBy)
 import Control.Monad (forM_, unless)
 
 import AST
@@ -60,7 +60,38 @@ parseFileWithRecovery input =
       case parseProgram tokens of
         Left errors -> do
           putStrLn "Обнаружены следующие ошибки:"
-          mapM_ printErrorMsg errors
+          
+          -- Группировка похожих ошибок для более компактного вывода
+          let 
+            -- Функция группировки ошибок
+            groupErrors :: [ParseError] -> [(String, Int)]
+            groupErrors errs = 
+              let grouped = map (\err@(ParseError _ msg) -> 
+                    -- Упрощаем сообщения для группировки
+                    if "неожиданный конец файла" `isInfixOf` msg then "неожиданный конец файла"
+                    else if "ожидался" `isInfixOf` msg then msg
+                    else if "неизвестный тип" `isInfixOf` msg then "неизвестный тип"
+                    else msg) errs
+                  countOccurrences x xs = length (filter (== x) xs)
+                  unique = nub grouped
+              in map (\msg -> (msg, countOccurrences msg grouped)) unique
+            
+            -- Если больше 10 ошибок, группируем по типам
+            displayErrors = if length errors > 10
+                            then let grouped = groupErrors errors
+                                     sortedGroups = sortBy (\(_, c1) (_, c2) -> compare c2 c1) grouped
+                                 in take 5 sortedGroups
+                            else []
+          
+          -- Показываем либо индивидуальные ошибки, либо сгруппированные
+          if length errors <= 10
+            then mapM_ printErrorMsg errors
+            else do
+              forM_ (take 5 errors) printErrorMsg
+              putStrLn "..."
+              forM_ displayErrors $ \(msg, count) ->
+                putStrLn $ "- " ++ msg ++ " (" ++ show count ++ " раз)"
+          
           putStrLn $ "\nВсего обнаружено " ++ show (length errors) ++ " ошибок."
           putStrLn "Парсер восстановился после ошибок и продолжил анализ."
           
@@ -69,17 +100,31 @@ parseFileWithRecovery input =
             categories = [
               ("отсутствует ;", "ожидался ;"),
               ("отсутствует )", "ожидался )"),
+              ("отсутствует (", "ожидался ("),
               ("пропущен токен", "пропущен токен"),
               ("отсутствует END", "ожидался END"),
+              ("неожиданный конец файла, отсутствует END", "неожиданный конец файла, отсутствует END"),
               ("отсутствует BEGIN", "ожидался BEGIN"),
-              ("незакрытый комментарий", "незакрытый комментарий")
+              ("незакрытый комментарий", "незакрытый комментарий"),
+              ("отсутствует точка", "ожидался ."),
+              ("неожиданный конец файла", "неожиданный конец файла"),
+              ("неизвестный тип", "неизвестный тип"),
+              ("ожидался =", "ожидался ="),
+              ("ожидался THEN", "ожидался THEN"),
+              ("ожидался DO", "ожидался DO")
               ]
             
             countByCategory :: String -> [ParseError] -> Int
-            countByCategory category = length . filter (\(ParseError _ msg) -> category `isInfixOf` msg)
+            countByCategory pattern = length . filter (\(ParseError _ msg) -> pattern `isSubstringOf` msg)
             
-            nonEmptyStats = filter (\(cat, count) -> count > 0) $ 
-                            map (\(name, pattern) -> (name, countByCategory pattern errors)) categories
+            -- Проверка, является ли подстрока частью строки
+            isSubstringOf :: String -> String -> Bool
+            isSubstringOf needle haystack = needle `isInfixOf` haystack
+            
+            -- Сортировка статистики по убыванию количества
+            nonEmptyStats = sortBy (\(_, c1) (_, c2) -> compare c2 c1) $
+                             filter (\(_, count) -> count > 0) $ 
+                             map (\(name, pattern) -> (name, countByCategory pattern errors)) categories
           
           unless (null nonEmptyStats) $ do
             putStrLn "\nСтатистика по типам ошибок:"
