@@ -13,7 +13,7 @@ data Token =
   | Plus | Minus | Multiply | Divide | Equal | NotEqual
   | Less | LessEqual | Greater | GreaterEqual
     -- Разделители и специальные символы
-  | Dot | Comma | Semicolon | Colon | LParen | RParen
+  | Comma | Semicolon | Colon | LParen | RParen
   | Caret | Assign | Period
     -- Идентификаторы и литералы
   | Ident String | IntLit Integer | RealLit Double

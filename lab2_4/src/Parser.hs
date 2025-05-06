@@ -51,8 +51,10 @@ parseProgram :: [AST.Located L.Token] -> Either AST.ParseError AST.Program
 parseProgram toks = do
   let ps0 = initParser toks
   (prog, ps1) <- parseProgram' ps0
-  if isEOF ps1 then pure prog
-               else Left $ AST.ParseError (currentPos ps1) "лишние символы после END."
+  -- После успешного разбора программы, следующий токен должен быть EOF
+  case current ps1 of
+    L.EOF -> pure prog
+    _     -> Left $ AST.ParseError (currentPos ps1) "лишние символы после END."
 
 -------------------------------------------------------------------------------
 -- PROGRAM := ( TYPE … )? ( VAR … )? BEGIN stmtSeq END . ---------------------
@@ -68,7 +70,7 @@ parseProgram' ps = do
     _        -> pure ([], ps1)
   ps3            <- match L.BeginKW ps2
   (body, ps4)    <- parseStmtSeq ps3
-  ps5            <- match L.EndKW ps4 >>= match L.Period >>= match L.EOF
+  ps5            <- match L.EndKW ps4 >>= match L.Period
   pure (AST.Program types vars body, ps5)
 
 -------------------------------------------------------------------------------
@@ -114,6 +116,10 @@ parseType ps = case current ps of
     (fields, ps3) <- parseFieldDecls ps2
     ps4           <- match L.EndKW ps3
     pure (AST.RecordType parent fields, ps4)
+  L.Ident name -> do
+    -- Обработка для именованных типов (пользовательских типов)
+    ps1 <- match (L.Ident name) ps
+    pure (AST.NamedType name, ps1)
   _ -> Left $ AST.ParseError (currentPos ps) "неизвестный тип"
 
 parseFieldDecls :: ParserState -> ParserResult [AST.FieldDeclaration]
@@ -173,9 +179,12 @@ parseStmtSeq ps = case current ps of
   L.EndKW  -> pure ([], ps)
   L.ElseKW -> pure ([], ps)
   _        -> do
-    (s , ps1) <- parseStmt ps
-    (ss, ps2) <- parseStmtSeq ps1
-    pure (s:ss, ps2)
+    (s, ps1) <- parseStmt ps
+    ps2 <- case current ps1 of
+      L.Semicolon -> match L.Semicolon ps1
+      _ -> pure ps1
+    (ss, ps3) <- parseStmtSeq ps2
+    pure (s:ss, ps3)
 
 parseStmt :: ParserState -> ParserResult AST.Statement
 parseStmt ps = case current ps of
@@ -366,8 +375,8 @@ parseDesignator ps = case current ps of
 -- Parse selectors (field access and dereference)
 parseSelectors :: ParserState -> ParserResult [AST.Selector]
 parseSelectors ps = case current ps of
-  L.Dot -> do
-    ps1 <- match L.Dot ps
+  L.Period -> do
+    ps1 <- match L.Period ps
     case current ps1 of
       L.Ident field -> do
         ps2         <- match (L.Ident field) ps1
@@ -379,5 +388,6 @@ parseSelectors ps = case current ps of
     (rest, ps2) <- parseSelectors ps1
     pure (AST.Dereference : rest, ps2)
   _ -> pure ([], ps)
+
 
 

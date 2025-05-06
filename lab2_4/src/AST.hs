@@ -22,6 +22,7 @@ data Type = RealType
               parentType :: Maybe String,
               fields :: [FieldDeclaration]
             }
+          | NamedType String -- Именованный пользовательский тип
           deriving (Show)
 
 -- Объявление полей в записи
