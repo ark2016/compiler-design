@@ -135,6 +135,7 @@ optionalParse parser ps = case parser ps of
 -- Entry point ----------------------------------------------------------------
 -------------------------------------------------------------------------------
 
+-- Program = ( "TYPE" ( TypeDeclaration ";" )* )? ( "VAR" ( VarDeclaration ";" )* )? "BEGIN" StatementSequence "END" "."
 parseProgram :: [AST.Located L.Token] -> Either [AST.ParseError] AST.Program
 parseProgram [] = Left [AST.ParseError (0, 0) "пустой список токенов"]
 parseProgram toks = do
@@ -154,9 +155,9 @@ parseProgram toks = do
               finalErrors = if null (errors ps1) then [err] else err : errors ps1
           in Left finalErrors
 
--------------------------------------------------------------------------------
--- PROGRAM := ( TYPE … )? ( VAR … )? BEGIN stmtSeq END . ---------------------
--------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+-- ProgramBody = ( "TYPE" ( TypeDeclaration ";" )* )? ( "VAR" ( VarDeclaration ";" )* )? "BEGIN" StatementSequence "END" "."
+------------------------------------------------------------------------------------------------------------------------
 
 parseProgram' :: ParserState -> ParserResult AST.Program
 parseProgram' ps = do
@@ -211,6 +212,7 @@ parseProgram' ps = do
 -- TYPE declarations ----------------------------------------------------------
 -------------------------------------------------------------------------------
 
+-- TypeDeclarationsList = ( TypeDeclaration ";" )*
 parseTypeDecls :: ParserState -> ParserResult [AST.TypeDeclaration]
 parseTypeDecls ps
   | current ps `elem` [L.VarKW, L.BeginKW] = pure ([], ps)
@@ -227,6 +229,7 @@ parseTypeDecls ps
       (ds, ps3) <- tryParse parseTypeDecls ps2
       pure (d:ds, ps3)
 
+-- TypeDeclaration = Ident "=" Type
 parseTypeDecl :: ParserState -> ParserResult AST.TypeDeclaration
 parseTypeDecl ps = case current ps of
   L.Ident name -> do
@@ -244,7 +247,7 @@ parseTypeDecl ps = case current ps of
     
   _ -> Left $ AST.ParseError (currentPos ps) "ожидался идентификатор типа"
 
--- Type ::= REAL | INTEGER | POINTER TO Type | RECORD … END
+-- Type = "REAL" | "INTEGER" | "POINTER" "TO" Type | "RECORD" ( "(" Ident ")" )? FieldDeclarationsList "END" | Ident
 parseType :: ParserState -> ParserResult AST.Type
 parseType ps = case current ps of
   L.RealKW    -> Right (AST.RealType, advance ps)
@@ -298,6 +301,7 @@ parseType ps = case current ps of
   L.Ident name -> Right (AST.NamedType name, advance ps)
   _ -> Left $ AST.ParseError (currentPos ps) "неизвестный тип"
 
+-- FieldDeclarationsList = ( FieldDeclaration ";" )*
 parseFieldDecls :: ParserState -> ParserResult [AST.FieldDeclaration]
 parseFieldDecls ps
   | current ps == L.EndKW = pure ([], ps)
@@ -314,6 +318,7 @@ parseFieldDecls ps
       (fds, ps3) <- tryParse parseFieldDecls ps2
       pure (fd:fds, ps3)
 
+-- FieldDeclaration = IdentList ":" Type
 parseFieldDecl :: ParserState -> ParserResult AST.FieldDeclaration
 parseFieldDecl ps = do
   (ids, ps1) <- tryParse parseIdentList ps
@@ -328,6 +333,7 @@ parseFieldDecl ps = do
   (ty, ps3) <- tryParse parseType ps2
   pure (AST.FieldDeclaration ids ty, ps3)
 
+-- IdentList = Ident ( "," Ident )*
 parseIdentList :: ParserState -> ParserResult [String]
 parseIdentList ps = case current ps of
   L.Ident nm -> do
@@ -344,6 +350,7 @@ parseIdentList ps = case current ps of
 -- VAR declarations -----------------------------------------------------------
 -------------------------------------------------------------------------------
 
+-- VarDeclarationsList = ( VarDeclaration ";" )*
 parseVarDecls :: ParserState -> ParserResult [AST.VarDeclaration]
 parseVarDecls ps
   | current ps == L.BeginKW = pure ([], ps)
@@ -360,6 +367,7 @@ parseVarDecls ps
       (vds, ps3) <- tryParse parseVarDecls ps2
       pure (vd:vds, ps3)
 
+-- VarDeclaration = IdentList ":" Type
 parseVarDecl :: ParserState -> ParserResult AST.VarDeclaration
 parseVarDecl ps = do
   (ids, ps1) <- tryParse parseIdentList ps
@@ -378,6 +386,9 @@ parseVarDecl ps = do
 -- Statements -----------------------------------------------------------------
 -------------------------------------------------------------------------------
 
+-- StatementSequence = ( Statement ( ";" )? )*
+-- More strictly, often: Statement ( ";" Statement )*
+-- The parser implementation is flexible with semicolons.
 parseStmtSeq :: ParserState -> ParserResult [AST.Statement]
 parseStmtSeq ps 
   | current ps == L.EOF = 
@@ -411,6 +422,7 @@ parseStmtSeq ps
           (ss, ps3) <- tryParse parseStmtSeq ps2
           pure (s:ss, ps3)
 
+-- Statement = Assignment | IfStatement | WhileStatement | NewStatement
 parseStmt :: ParserState -> ParserResult AST.Statement
 parseStmt ps = case current ps of
   L.IfKW    -> tryParse parseIf ps
@@ -419,7 +431,7 @@ parseStmt ps = case current ps of
   L.Ident _ -> tryParse parseAssign ps
   _         -> Left $ AST.ParseError (currentPos ps) "ожидался оператор"
 
--- Assignment ::= Designator := Expression
+-- Assignment = Designator ":=" Expression
 parseAssign :: ParserState -> ParserResult AST.Statement
 parseAssign ps = do
   (des, ps1) <- tryParse parseDesignator ps
@@ -444,7 +456,7 @@ parseAssign ps = do
   pure (AST.Assignment des e, ps3)
 
 -------------------------------------------------------------------------------
--- IF … THEN … [ELSE …] END ---------------------------------------------------
+-- IfStatement = "IF" Expression "THEN" StatementSequence ( "ELSE" StatementSequence )? "END"
 -------------------------------------------------------------------------------
 
 parseIf :: ParserState -> ParserResult AST.Statement
@@ -479,7 +491,7 @@ parseIf ps = do
   pure (AST.IfStatement cond thenB elseB, ps6)
 
 -------------------------------------------------------------------------------
--- WHILE … DO … END -----------------------------------------------------------
+-- WhileStatement = "WHILE" Expression "DO" StatementSequence "END"
 -------------------------------------------------------------------------------
 
 parseWhile :: ParserState -> ParserResult AST.Statement
@@ -507,7 +519,7 @@ parseWhile ps = do
   pure (AST.WhileStatement cond body, ps5)
 
 -------------------------------------------------------------------------------
--- NEW ( designator ) ---------------------------------------------------------
+-- NewStatement = "NEW" "(" Designator ")"
 -------------------------------------------------------------------------------
 
 parseNew :: ParserState -> ParserResult AST.Statement
@@ -550,6 +562,8 @@ tokToRel L.Greater      = AST.Greater
 tokToRel L.GreaterEqual = AST.GreaterEqual
 tokToRel _              = error "Неверный токен отношения"
 
+-- Expression = SimpleExpression ( RelOp SimpleExpression )?
+-- RelOp = "=" | "#" | "<" | "<=" | ">" | ">="
 parseExpr :: ParserState -> ParserResult AST.Expression
 parseExpr ps = do
   (lhs, ps1) <- tryParse parseSimpleExpr ps
@@ -560,7 +574,9 @@ parseExpr ps = do
       pure (AST.Relation lhs (tokToRel tok) rhs, ps3)
     _ -> pure (AST.SimpleExpr lhs, ps1)
 
--- Простое выражение с необязательными знаком и terms
+-- SimpleExpression = ( Sign )? Term ( AddOp Term )*
+-- Sign = "+" | "-"
+-- AddOp = "+" | "-" | "OR"
 parseSimpleExpr :: ParserState -> ParserResult AST.SimpleExpression
 parseSimpleExpr ps = do
   -- Опциональный знак
@@ -576,7 +592,8 @@ parseSimpleExpr ps = do
   
   pure (AST.SimpleExpression sign (AST.TermWithOp term1 Nothing : terms), ps3)
 
--- Parse terms with operations (additive: +, -, OR)
+-- TermAdditionList = ( AddOp Term )*
+-- AddOp = "+" | "-" | "OR"
 parseTermsWithOps :: ParserState -> ParserResult [AST.TermWithOp]
 parseTermsWithOps ps = case current ps of
   L.Plus -> do
@@ -596,14 +613,16 @@ parseTermsWithOps ps = case current ps of
     pure (AST.TermWithOp term (Just AST.Or) : rest, ps3)
   _ -> pure ([], ps)
 
--- Parse term (factors with multiplicative operations)
+-- Term = Factor ( MulOp Factor )*
+-- MulOp = "*" | "/" | "DIV" | "MOD" | "AND"
 parseTerm :: ParserState -> ParserResult AST.Term
 parseTerm ps = do
   (f, ps1) <- tryParse parseFactor ps
   (fs, ps2) <- tryParse parseFactorsWithOps ps1
   pure (AST.Term f fs, ps2)
 
--- Parse factors with operations (multiplicative: *, /, DIV, MOD, AND)
+-- FactorMultiplicationList = ( MulOp Factor )*
+-- MulOp = "*" | "/" | "DIV" | "MOD" | "AND"
 parseFactorsWithOps :: ParserState -> ParserResult [(AST.MulOp, Factor)]
 parseFactorsWithOps ps = case current ps of
   L.Multiply -> do
@@ -633,7 +652,7 @@ parseFactorsWithOps ps = case current ps of
     pure ((AST.And, f) : fs, ps3)
   _ -> pure ([], ps)
 
--- Parse factor (atomic expressions)
+-- Factor = IntLiteral | RealLiteral | "(" Expression ")" | "NOT" Factor | Designator
 parseFactor :: ParserState -> ParserResult AST.Factor
 parseFactor ps = case current ps of
   L.IntLit n -> Right (AST.IntLiteral n, advance ps)
@@ -659,7 +678,7 @@ parseFactor ps = case current ps of
     pure (AST.DesignatorFactor d, ps1)
   _ -> Left $ AST.ParseError (currentPos ps) "ожидался фактор"
 
--- Parse designator (variable access path)
+-- Designator = Ident ( Selector )*
 parseDesignator :: ParserState -> ParserResult AST.Designator
 parseDesignator ps = case current ps of
   L.Ident name -> do
@@ -668,7 +687,8 @@ parseDesignator ps = case current ps of
     pure (AST.Designator name sels, ps2)
   _ -> Left $ AST.ParseError (currentPos ps) "ожидался идентификатор"
 
--- Parse selectors (field access and dereference)
+-- SelectorList = ( Selector )*
+-- Selector = "." Ident | "^"
 parseSelectors :: ParserState -> ParserResult [AST.Selector]
 parseSelectors ps = case current ps of
   L.Period -> do
