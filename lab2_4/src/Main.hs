@@ -50,12 +50,12 @@ parseFile input =
 parseFileWithRecovery :: String -> IO ()
 parseFileWithRecovery input = 
   case tokenize input of
-    Left err -> printError err
+    Left err -> printErrorFatal err
     Right tokens -> 
       case parseProgram tokens of
         Left errors -> do
           putStrLn "Обнаружены ошибки:"
-          mapM_ printError errors
+          mapM_ printErrorNonFatal errors
           putStrLn "\nПарсер восстановился после ошибок и продолжил анализ."
         Right ast -> do
           putStrLn "Синтаксический анализ успешно завершен."
@@ -65,14 +65,14 @@ parseFileWithRecovery input =
 parseFileWithDebug :: String -> IO ()
 parseFileWithDebug input = 
   case tokenize input of
-    Left err -> printError err
+    Left err -> printErrorFatal err
     Right tokens -> do
       putStrLn "Токены:"
       mapM_ print tokens
       case parseProgram tokens of
         Left errors -> do
           putStrLn "Обнаружены ошибки:"
-          mapM_ printError errors
+          mapM_ printErrorNonFatal errors
         Right ast -> do
           putStrLn "Синтаксический анализ успешно завершен."
           putStrLn "Абстрактное синтаксическое дерево:"
@@ -141,12 +141,25 @@ showTokens input =
       putStrLn "Токены:"
       mapM_ (\t -> putStrLn $ show t) tokens
 
--- Функция для вывода ошибок
-printError :: ParseError -> IO ()
-printError (ParseError (line, col) msg) = do
+-- Функция для вывода ошибок с завершением программы
+printErrorFatal :: ParseError -> IO ()
+printErrorFatal err = do
+  printErrorMsg err
+  exitFailure
+
+-- Функция для вывода ошибок без завершения программы
+printErrorNonFatal :: ParseError -> IO ()
+printErrorNonFatal = printErrorMsg
+
+-- Функция для вывода сообщения об ошибке
+printErrorMsg :: ParseError -> IO ()
+printErrorMsg (ParseError (line, col) msg) = do
   putStrLn $ "Ошибка в строке " ++ show line ++ ", столбце " ++ show col ++ ":"
   putStrLn msg
-  exitFailure
+
+-- Для обратной совместимости со старым кодом
+printError :: ParseError -> IO ()
+printError = printErrorFatal
 
 -- Функция для создания тестового файла Оберона
 createTestFile :: IO ()
