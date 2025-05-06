@@ -5,6 +5,7 @@ import System.IO (readFile)
 import System.Exit (exitFailure)
 import Data.Char (isSpace)
 import Data.List (isPrefixOf, isInfixOf, tails, findIndex)
+import Control.Monad (forM_, unless)
 
 import AST
 import Lexer
@@ -61,7 +62,30 @@ parseFileWithRecovery input =
           putStrLn "Обнаружены следующие ошибки:"
           mapM_ printErrorMsg errors
           putStrLn $ "\nВсего обнаружено " ++ show (length errors) ++ " ошибок."
-          putStrLn "Парсер попытался восстановиться после ошибок и продолжить анализ."
+          putStrLn "Парсер восстановился после ошибок и продолжил анализ."
+          
+          -- Подсчет ошибок по типам для анализа
+          let 
+            categories = [
+              ("отсутствует ;", "ожидался ;"),
+              ("отсутствует )", "ожидался )"),
+              ("пропущен токен", "пропущен токен"),
+              ("отсутствует END", "ожидался END"),
+              ("отсутствует BEGIN", "ожидался BEGIN"),
+              ("незакрытый комментарий", "незакрытый комментарий")
+              ]
+            
+            countByCategory :: String -> [ParseError] -> Int
+            countByCategory category = length . filter (\(ParseError _ msg) -> category `isInfixOf` msg)
+            
+            nonEmptyStats = filter (\(cat, count) -> count > 0) $ 
+                            map (\(name, pattern) -> (name, countByCategory pattern errors)) categories
+          
+          unless (null nonEmptyStats) $ do
+            putStrLn "\nСтатистика по типам ошибок:"
+            forM_ nonEmptyStats $ \(cat, count) ->
+              putStrLn $ "  - " ++ cat ++ ": " ++ show count ++ " шт."
+          
         Right ast -> do
           putStrLn "Синтаксический анализ успешно завершен."
           putStrLn "Абстрактное синтаксическое дерево построено."

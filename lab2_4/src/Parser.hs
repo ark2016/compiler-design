@@ -26,16 +26,19 @@ type ParserResult a = Either AST.ParseError (a, ParserState)
 syncTokens :: [L.Token]
 syncTokens = [
   L.Semicolon, L.EndKW, L.BeginKW, L.TypeKW, L.VarKW, 
-  L.Period, L.IfKW, L.ThenKW, L.ElseKW, L.WhileKW, L.DoKW,
-  L.Ident "", L.IntLit 0, L.RealLit 0.0
+  L.Period, L.IfKW, L.ThenKW, L.ElseKW, L.WhileKW, L.DoKW
   ]
 
--- Проверка, является ли токен совместимым с синхронизацией
-isCompatibleWithSync :: L.Token -> Bool
-isCompatibleWithSync (L.Ident _) = True
-isCompatibleWithSync (L.IntLit _) = True
-isCompatibleWithSync (L.RealLit _) = True
-isCompatibleWithSync token = token `elem` syncTokens
+-- Проверка, является ли токен идентификатором или литералом
+isIdentOrLiteral :: L.Token -> Bool
+isIdentOrLiteral (L.Ident _) = True
+isIdentOrLiteral (L.IntLit _) = True
+isIdentOrLiteral (L.RealLit _) = True
+isIdentOrLiteral _ = False
+
+-- Проверка, является ли токен синтаксически значимым для восстановления
+isSyncToken :: L.Token -> Bool
+isSyncToken token = token `elem` syncTokens
 
 initParser :: [AST.Located L.Token] -> ParserState
 initParser []       = error "Parser: empty token list"
@@ -66,11 +69,11 @@ matchWithRecovery expected ps@ParserState{currentToken = AST.Located p actual, e
           recoveredPs = recover ps'
       in Right (ps', recoveredPs)
 
--- Восстановление после ошибки - пропуск токенов до точки синхронизации
+-- Восстановление после ошибки - пропуск токенов до точки синхронизации или идентификатора/литерала
 recover :: ParserState -> ParserState
 recover ps
   | isEOF ps = ps  -- Если достигнут конец файла, возвращаем текущее состояние
-  | isCompatibleWithSync (current ps) = advance ps  -- Если нашли токен синхронизации, двигаемся дальше
+  | isSyncToken (current ps) || isIdentOrLiteral (current ps) = advance ps  -- Если нашли токен синхронизации, двигаемся дальше
   | otherwise = recover (advance ps)  -- Иначе продвигаемся и продолжаем искать
 
 isEOF :: ParserState -> Bool
@@ -95,14 +98,24 @@ tryParse parser ps = tryParseWithCounter parser ps maxRecoveryAttempts
 -- Версия tryParse с счетчиком попыток для избегания зацикливания
 tryParseWithCounter :: (ParserState -> ParserResult a) -> ParserState -> Int -> ParserResult a
 tryParseWithCounter parser ps attempts
-  | attempts <= 0 = Left $ AST.ParseError (currentPos ps) "превышено количество попыток восстановления"
+  | attempts <= 0 = 
+      -- Превышено максимальное количество попыток восстановления
+      let err = AST.ParseError (currentPos ps) "превышено количество попыток восстановления"
+          ps' = addError err ps
+      in Left err
   | otherwise = case parser ps of
       Right res -> Right res
       Left err -> 
         let ps' = addError err ps
             recoveredPs = recover ps'
         in if posEqual ps recoveredPs
-           then Left $ AST.ParseError (currentPos ps) "не удалось восстановиться после ошибки"
+           then -- Не удалось восстановиться, пропускаем токен
+                if isEOF ps
+                then Left $ AST.ParseError (currentPos ps) "неожиданный конец файла, невозможно продолжить анализ"
+                else let newPs = advance ps
+                         newErr = AST.ParseError (currentPos ps) ("пропущен токен " ++ show (current ps))
+                         ps'' = addError newErr ps'
+                     in tryParseWithCounter parser newPs (attempts - 1)
            else tryParseWithCounter parser recoveredPs (attempts - 1)
   where
     posEqual a b = currentPos a == currentPos b
@@ -127,6 +140,7 @@ optionalParse parser ps = case parser ps of
 -------------------------------------------------------------------------------
 
 parseProgram :: [AST.Located L.Token] -> Either [AST.ParseError] AST.Program
+parseProgram [] = Left [AST.ParseError (0, 0) "пустой список токенов"]
 parseProgram toks = do
   let ps0 = initParser toks
   case parseProgram' ps0 of
@@ -135,9 +149,10 @@ parseProgram toks = do
       -- После успешного разбора программы, следующий токен должен быть EOF
       case current ps1 of
         L.EOF -> 
-          if null (errors ps1)
-            then Right prog
-            else Left (errors ps1)
+          let errs = errors ps1
+          in if null errs
+             then Right prog
+             else Left errs
         _ -> 
           let err = AST.ParseError (currentPos ps1) "лишние символы после END."
               finalErrors = if null (errors ps1) then [err] else err : errors ps1
@@ -150,8 +165,8 @@ parseProgram toks = do
 parseProgram' :: ParserState -> ParserResult AST.Program
 parseProgram' ps = do
   -- Проверка на EOF для обработки незакрытых комментариев
-  if isEOF ps 
-    then Left $ AST.ParseError (currentPos ps) "неожиданный конец файла, возможно, незакрытый комментарий"
+  if isEOF ps && null (tokens ps)
+    then Left $ AST.ParseError (currentPos ps) "файл пуст или содержит только незакрытый комментарий"
     else do
       (types, ps1) <- case current ps of
         L.TypeKW -> tryParse parseTypeDecls (advance ps)
@@ -369,7 +384,10 @@ parseVarDecl ps = do
 
 parseStmtSeq :: ParserState -> ParserResult [AST.Statement]
 parseStmtSeq ps 
-  | current ps == L.EOF = Left $ AST.ParseError (currentPos ps) "неожиданный конец файла при разборе последовательности операторов"
+  | current ps == L.EOF = 
+      -- В случае обнаружения EOF в середине разбора последовательности операторов, 
+      -- возвращаем пустой список операторов как результат и текущее состояние
+      Right ([], ps)
   | current ps == L.EndKW  = pure ([], ps)
   | current ps == L.ElseKW = pure ([], ps)
   | current ps == L.Semicolon = do
@@ -384,7 +402,14 @@ parseStmtSeq ps
           let ps' = addError err ps
               ps'' = recover ps'
           in if currentPos ps == currentPos ps''
-             then Left $ AST.ParseError (currentPos ps) "не удалось восстановиться от ошибки в последовательности операторов"
+             then -- Если позиция не изменилась, значит не удалось восстановиться
+                  -- В этом случае пропускаем текущий токен и продолжаем разбор
+                  let newPs = advance ps
+                      errorMsg = if isEOF newPs 
+                                 then "неожиданный конец файла, возможно незакрытый комментарий"
+                                 else "пропущен токен " ++ show (current ps)
+                      ps' = addError (AST.ParseError (currentPos ps) errorMsg) ps
+                  in Right ([], newPs)
              else tryParse parseStmtSeq ps''
         Right (s, ps1) -> do
           -- Точка с запятой после оператора необязательна
