@@ -9,7 +9,6 @@ module Parser where
 import           AST                       hiding (RelOp (..), Sign (..), AddOp (..), MulOp (..))
 import qualified AST                       as AST
 import qualified Lexer                     as L
-import           Data.List                 (nub)
 
 -------------------------------------------------------------------------------
 -- Parser state & helpers -----------------------------------------------------
