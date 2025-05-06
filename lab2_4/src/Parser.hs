@@ -198,8 +198,18 @@ parseStmt ps = case current ps of
 parseAssign :: ParserState -> ParserResult AST.Statement
 parseAssign ps = do
   (des, ps1) <- parseDesignator ps
-  ps2        <- match L.Assign ps1
-  (e  , ps3) <- parseExpr ps2
+  -- Обработка двух возможных вариантов синтаксиса присваивания:
+  -- 1. Токен Assign (если лексер корректно распознал его)
+  -- 2. Последовательность токенов Colon и Equal (если лексер обработал их как отдельные)
+  ps2 <- case current ps1 of
+    L.Assign -> match L.Assign ps1
+    L.Colon -> do
+      ps' <- match L.Colon ps1
+      case current ps' of
+        L.Equal -> match L.Equal ps'
+        _ -> Left $ AST.ParseError (currentPos ps') "ожидался знак равенства после двоеточия для присваивания"
+    _ -> Left $ AST.ParseError (currentPos ps1) "ожидался оператор присваивания"
+  (e, ps3) <- parseExpr ps2
   pure (AST.Assignment des e, ps3)
 
 -------------------------------------------------------------------------------
