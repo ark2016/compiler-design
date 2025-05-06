@@ -24,10 +24,14 @@ main = do
     ["--tokens", filePath] -> do
       fileContent <- readFile filePath
       showTokens fileContent
+    ["--recover", filePath] -> do
+      fileContent <- readFile filePath
+      parseFileWithRecovery fileContent
     _ -> do
       putStrLn "Использование: oberon-parser <имя_файла>"
       putStrLn "             или oberon-parser --debug <имя_файла> для вывода АСД"
       putStrLn "             или oberon-parser --tokens <имя_файла> для вывода токенов"
+      putStrLn "             или oberon-parser --recover <имя_файла> для парсинга с восстановлением"
       exitFailure
 
 -- Функция для парсинга файла и вывода результата
@@ -37,7 +41,22 @@ parseFile input =
     Left err -> printError err
     Right tokens -> 
       case parseProgram tokens of
-        Left err -> printError err
+        Left err -> printError (head err)
+        Right ast -> do
+          putStrLn "Синтаксический анализ успешно завершен."
+          putStrLn "Абстрактное синтаксическое дерево построено."
+
+-- Функция для парсинга файла с восстановлением при ошибках
+parseFileWithRecovery :: String -> IO ()
+parseFileWithRecovery input = 
+  case tokenize input of
+    Left err -> printError err
+    Right tokens -> 
+      case parseProgram tokens of
+        Left errors -> do
+          putStrLn "Обнаружены ошибки:"
+          mapM_ printError errors
+          putStrLn "\nПарсер восстановился после ошибок и продолжил анализ."
         Right ast -> do
           putStrLn "Синтаксический анализ успешно завершен."
           putStrLn "Абстрактное синтаксическое дерево построено."
@@ -51,7 +70,9 @@ parseFileWithDebug input =
       putStrLn "Токены:"
       mapM_ print tokens
       case parseProgram tokens of
-        Left err -> printError err
+        Left errors -> do
+          putStrLn "Обнаружены ошибки:"
+          mapM_ printError errors
         Right ast -> do
           putStrLn "Синтаксический анализ успешно завершен."
           putStrLn "Абстрактное синтаксическое дерево:"
