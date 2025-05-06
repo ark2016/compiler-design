@@ -3,6 +3,8 @@ module Main where
 import System.Environment (getArgs)
 import System.IO (readFile)
 import System.Exit (exitFailure)
+import Data.Char (isSpace)
+import Data.List (isPrefixOf, isInfixOf, tails, findIndex)
 
 import AST
 import Lexer
@@ -53,7 +55,61 @@ parseFileWithDebug input =
         Right ast -> do
           putStrLn "Синтаксический анализ успешно завершен."
           putStrLn "Абстрактное синтаксическое дерево:"
-          print ast
+          putStrLn (formatAst (show ast))
+
+-- Функция для форматирования AST
+formatAst :: String -> String
+formatAst str = formatWithIndent 0 str
+
+-- Функция для форматирования с отступами
+formatWithIndent :: Int -> String -> String
+formatWithIndent indent [] = []
+formatWithIndent indent s@('{':rest) = 
+  "{\n" ++ formatWithIndent (indent + 2) rest
+formatWithIndent indent s@('}':rest) = 
+  makeSpaces (indent - 2) ++ "}\n" ++ formatWithIndent (indent - 2) rest
+formatWithIndent indent s@('[':rest) = 
+  "[\n" ++ formatWithIndent (indent + 2) rest
+formatWithIndent indent s@(']':rest) = 
+  makeSpaces (indent - 2) ++ "]\n" ++ formatWithIndent (indent - 2) rest
+formatWithIndent indent s@('(':rest) =
+  "(\n" ++ formatWithIndent (indent + 2) rest
+formatWithIndent indent s@(')':rest) =
+  makeSpaces (indent - 2) ++ ")\n" ++ formatWithIndent (indent - 2) rest
+formatWithIndent indent s@(',':rest) =
+  ",\n" ++ makeSpaces indent ++ formatWithIndent indent (dropWhile isSpace rest)
+formatWithIndent indent s
+  | " = " `isPrefixOf` s = " = " ++ formatWithIndent indent (drop 3 s)
+  | otherwise =
+      let 
+        (token, rest) = break (\c -> c `elem` "{},[]()") s
+        
+        -- Улучшенная обработка именованных полей (field = value)
+        formattedToken = if " = " `isInfixOf` token
+                         then let (field, value) = splitAtSubstring " = " token
+                              in field ++ " = " ++ value
+                         else token
+        
+        rest' = if null rest then "" else rest
+      in
+        if all isSpace token && not (null rest)
+        then formatWithIndent indent rest
+        else makeSpaces indent ++ formattedToken ++ formatWithIndent indent rest'
+
+-- Вспомогательная функция для создания отступов - переименована, чтобы избежать конфликта
+makeSpaces :: Int -> String
+makeSpaces n = replicate n ' '
+
+-- Разделить строку по подстроке
+splitAtSubstring :: String -> String -> (String, String)
+splitAtSubstring sub str = 
+  case findSubstring sub str of
+    Nothing -> (str, "")
+    Just idx -> (take idx str, drop (idx + length sub) str)
+
+-- Найти индекс первого вхождения подстроки
+findSubstring :: String -> String -> Maybe Int
+findSubstring sub str = findIndex (isPrefixOf sub) (tails str)
 
 -- Функция для отображения только токенов
 showTokens :: String -> IO ()
@@ -136,3 +192,4 @@ testProgram = unlines [
   "  END;",
   "END."
   ] 
+

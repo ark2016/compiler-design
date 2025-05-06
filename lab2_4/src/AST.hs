@@ -130,4 +130,127 @@ data ParseError = ParseError {
                     errorPos :: (Int, Int),
                     errorMsg :: String
                   }
-                deriving (Show) 
+                deriving (Show)
+
+-- Класс для красивого форматированного вывода
+class Pretty a where
+  pretty :: Int -> a -> String  -- Int - уровень отступа
+
+instance Pretty Program where
+  pretty indent (Program types vars stmts) =
+    "Program {\n" ++
+    indent' ++ "TypeDeclarations:\n" ++ prettyList (indent + 2) types ++ "\n" ++
+    indent' ++ "VarDeclarations:\n" ++ prettyList (indent + 2) vars ++ "\n" ++
+    indent' ++ "Statements:\n" ++ prettyList (indent + 2) stmts ++ "\n" ++
+    spaces indent ++ "}"
+    where indent' = spaces (indent + 1)
+
+instance Pretty TypeDeclaration where
+  pretty indent (TypeDeclaration name def) =
+    spaces indent ++ name ++ " = " ++ pretty (indent + 2) def
+
+instance Pretty Type where
+  pretty _ RealType = "REAL"
+  pretty _ IntegerType = "INTEGER"
+  pretty indent (PointerType t) = "POINTER TO " ++ pretty indent t
+  pretty indent (RecordType parent fields) =
+    "RECORD" ++ parentStr ++ " {\n" ++
+    prettyList (indent + 2) fields ++ "\n" ++
+    spaces indent ++ "}"
+    where parentStr = case parent of
+                        Nothing -> ""
+                        Just p -> "(" ++ p ++ ")"
+  pretty _ (NamedType name) = name
+
+instance Pretty FieldDeclaration where
+  pretty indent (FieldDeclaration names typ) =
+    spaces indent ++ concat (zipWith (++) names (replicate (length names - 1) ", " ++ [""])) ++ 
+    " : " ++ pretty indent typ
+
+instance Pretty VarDeclaration where
+  pretty indent (VarDeclaration names typ) =
+    spaces indent ++ concat (zipWith (++) names (replicate (length names - 1) ", " ++ [""])) ++ 
+    " : " ++ pretty indent typ
+
+instance Pretty Statement where
+  pretty indent (Assignment target expr) =
+    spaces indent ++ pretty 0 target ++ " := " ++ pretty 0 expr
+  pretty indent (IfStatement cond thenStmts elseStmts) =
+    spaces indent ++ "IF " ++ pretty 0 cond ++ " THEN\n" ++
+    prettyList (indent + 2) thenStmts ++
+    case elseStmts of
+      Nothing -> ""
+      Just stmts -> "\n" ++ spaces indent ++ "ELSE\n" ++ prettyList (indent + 2) stmts
+  pretty indent (WhileStatement cond body) =
+    spaces indent ++ "WHILE " ++ pretty 0 cond ++ " DO\n" ++
+    prettyList (indent + 2) body
+  pretty indent (NewStatement target) =
+    spaces indent ++ "NEW(" ++ pretty 0 target ++ ")"
+
+instance Pretty Expression where
+  pretty indent (Relation left op right) =
+    pretty indent left ++ " " ++ pretty 0 op ++ " " ++ pretty 0 right
+  pretty indent (SimpleExpr expr) = pretty indent expr
+
+instance Pretty RelOp where
+  pretty _ Equal = "="
+  pretty _ NotEqual = "#"
+  pretty _ Less = "<"
+  pretty _ LessEqual = "<="
+  pretty _ Greater = ">"
+  pretty _ GreaterEqual = ">="
+
+instance Pretty SimpleExpression where
+  pretty indent (SimpleExpression sign terms) =
+    signStr ++ concatMap (pretty indent) terms
+    where signStr = case sign of
+                      Nothing -> ""
+                      Just Plus -> "+"
+                      Just Minus -> "-"
+
+instance Pretty TermWithOp where
+  pretty indent (TermWithOp term op) =
+    pretty indent term ++ opStr
+    where opStr = case op of
+                    Nothing -> ""
+                    Just Add -> " + "
+                    Just Subtract -> " - "
+                    Just Or -> " OR "
+
+instance Pretty Term where
+  pretty indent (Term factor restFactors) =
+    pretty indent factor ++ concatMap (\(op, f) -> " " ++ pretty 0 op ++ " " ++ pretty 0 f) restFactors
+
+instance Pretty MulOp where
+  pretty _ Multiply = "*"
+  pretty _ Divide = "/"
+  pretty _ Div = "DIV"
+  pretty _ Mod = "MOD"
+  pretty _ And = "&"
+
+instance Pretty Factor where
+  pretty indent (DesignatorFactor d) = pretty indent d
+  pretty _ (IntLiteral n) = show n
+  pretty _ (RealLiteral n) = show n
+  pretty indent (ParenExpression e) = "(" ++ pretty indent e ++ ")"
+  pretty indent (NotFactor f) = "~" ++ pretty indent f
+
+instance Pretty Designator where
+  pretty _ (Designator name selectors) =
+    name ++ concatMap (\s -> pretty 0 s) selectors
+
+instance Pretty Selector where
+  pretty _ (FieldSelector field) = "." ++ field
+  pretty _ Dereference = "^"
+
+-- Вспомогательные функции
+spaces :: Int -> String
+spaces n = replicate n ' '
+
+prettyList :: Pretty a => Int -> [a] -> String
+prettyList indent = concatMap (\x -> pretty indent x ++ "\n")
+
+-- Функция для получения форматированного вывода AST
+prettyPrint :: Program -> String
+prettyPrint = pretty 0 
+
