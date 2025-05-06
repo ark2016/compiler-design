@@ -1,455 +1,251 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE LambdaCase #-}
+
+-- | Recursive‑descent parser for the Oberon subset (lab 2.4).
+--   All lexer tokens are imported *qualified* (alias @L@) to avoid
+--   clashes with identically‑named constructors in the AST.
 module Parser where
 
-import Data.Maybe (maybeToList)
-import AST
-import Lexer (Token(..))
-import Control.Monad.State
-import Control.Monad.Except
+import           AST                       hiding (RelOp (..), Sign (..))
+import qualified AST                       as AST
+import           Lexer                     (Token (..))
+import qualified Lexer                     as L
 
--- Состояние парсера
-data ParserState = ParserState {
-  tokens :: [Located Token],  -- оставшиеся токены
-  currentToken :: Located Token  -- текущий токен
-}
+-------------------------------------------------------------------------------
+-- Parser state & helpers -----------------------------------------------------
+-------------------------------------------------------------------------------
 
--- Тип результата парсера: либо ошибка, либо результат разбора и новое состояние
-type ParserResult a = Either ParseError (a, ParserState)
+data ParserState = ParserState
+  { tokens       :: [AST.Located L.Token]   -- ^ remaining unconsumed tokens
+  , currentToken :: AST.Located L.Token     -- ^ look‑ahead (never empty)
+  }
 
--- Инициализация парсера
-initParser :: [Located Token] -> ParserState
-initParser [] = error "Пустой список токенов"
-initParser (t:ts) = ParserState { tokens = ts, currentToken = t }
+type ParserResult a = Either AST.ParseError (a, ParserState)
 
--- Получение текущего токена
-current :: ParserState -> Token
-current = unLoc . currentToken
+initParser :: [AST.Located L.Token] -> ParserState
+initParser []       = error "Parser: empty token list"
+initParser (t : ts) = ParserState ts t
 
--- Получение позиции текущего токена
-currentPos :: ParserState -> (Int, Int)
-currentPos = pos . currentToken
+current :: ParserState -> L.Token
+current = AST.unLoc . currentToken
 
--- Переход к следующему токену
+currentPos :: ParserState -> (Int,Int)
+currentPos = AST.pos . currentToken
+
 advance :: ParserState -> ParserState
-advance ParserState{tokens = [], currentToken = t} = 
-  ParserState { tokens = [], currentToken = t }
-advance ParserState{tokens = t:ts} = 
-  ParserState { tokens = ts, currentToken = t }
+advance ParserState{tokens = [], currentToken = t}   = ParserState [] t
+advance ParserState{tokens = t:ts}                   = ParserState ts t
 
--- Проверка, что текущий токен совпадает с ожидаемым
-match :: Token -> ParserState -> Either ParseError ParserState
-match expected ps@ParserState{currentToken = Located pos actual}
+match :: L.Token -> ParserState -> Either AST.ParseError ParserState
+match expected ps@ParserState{currentToken = AST.Located p actual}
   | expected == actual = Right (advance ps)
-  | otherwise = Left (ParseError pos ("Ожидался токен " ++ show expected ++ ", но получен " ++ show actual))
+  | otherwise = Left $ AST.ParseError p ("ожидался " ++ show expected ++ ", получен " ++ show actual)
 
--- Проверка, находимся ли мы в конце файла
 isEOF :: ParserState -> Bool
-isEOF = (== EOF) . current
+isEOF = (== L.EOF) . current
 
--- Основная функция для разбора программы
-parseProgram :: [Located Token] -> Either ParseError Program
-parseProgram tokens = do
-  let ps = initParser tokens
-  (program, _) <- parseProgram' ps
-  return program
+-------------------------------------------------------------------------------
+-- Entry point ----------------------------------------------------------------
+-------------------------------------------------------------------------------
 
--- Парсер программы
--- Program = ( "TYPE" ( TypeDeclaration ";" )* )?
---           ( "VAR" ( VarDeclaration ";" )* )?
---           "BEGIN" StatementSequence "END" "." EOF
+parseProgram :: [AST.Located L.Token] -> Either AST.ParseError Program
+parseProgram toks = do
+  let ps0 = initParser toks
+  (prog, ps1) <- parseProgram' ps0
+  if isEOF ps1 then pure prog
+               else Left $ AST.ParseError (currentPos ps1) "лишние символы после END."
+
+-------------------------------------------------------------------------------
+-- PROGRAM := ( TYPE … )? ( VAR … )? BEGIN stmtSeq END . ---------------------
+-------------------------------------------------------------------------------
+
 parseProgram' :: ParserState -> ParserResult Program
 parseProgram' ps = do
-  -- Опциональный раздел объявлений типов
-  (typeDecls, ps1) <- case current ps of
-    TypeKW -> do
-      ps' <- match TypeKW ps
-      parseTypeDeclarations ps'
-    _ -> Right ([], ps)
-  
-  -- Опциональный раздел объявлений переменных
-  (varDecls, ps2) <- case current ps1 of
-    VarKW -> do
-      ps' <- match VarKW ps1
-      parseVarDeclarations ps'
-    _ -> Right ([], ps1)
-  
-  -- Блок операторов
-  ps3 <- match BeginKW ps2
-  (stmts, ps4) <- parseStatementSequence ps3
-  ps5 <- match EndKW ps4
-  ps6 <- match Period ps5
-  ps7 <- match EOF ps6
-  
-  return (Program typeDecls varDecls stmts, ps7)
+  (types, ps1) <- case current ps of
+    L.TypeKW -> match L.TypeKW ps >>= parseTypeDecls
+    _        -> pure ([], ps)
+  (vars , ps2) <- case current ps1 of
+    L.VarKW  -> match L.VarKW ps1 >>= parseVarDecls
+    _        -> pure ([], ps1)
+  ps3            <- match L.BeginKW ps2
+  (body, ps4)    <- parseStmtSeq ps3
+  ps5            <- match L.EndKW ps4 >>= match L.Period >>= match L.EOF
+  pure (Program types vars body, ps5)
 
--- Парсер объявлений типов
--- ( TypeDeclaration ";" )*
-parseTypeDeclarations :: ParserState -> ParserResult [TypeDeclaration]
-parseTypeDeclarations ps = 
-  if current ps `elem` [VarKW, BeginKW]
-  then Right ([], ps)
-  else do
-    (decl, ps1) <- parseTypeDeclaration ps
-    ps2 <- match Semicolon ps1
-    (decls, ps3) <- parseTypeDeclarations ps2
-    return (decl : decls, ps3)
+-------------------------------------------------------------------------------
+-- TYPE declarations ----------------------------------------------------------
+-------------------------------------------------------------------------------
 
--- Парсер объявления типа
--- TypeDeclaration = Ident "=" Type
-parseTypeDeclaration :: ParserState -> ParserResult TypeDeclaration
-parseTypeDeclaration ps@ParserState{currentToken = Located _ (Ident name)} = do
-  ps1 <- match (Ident name) ps
-  ps2 <- match Equal ps1
-  (typ, ps3) <- parseType ps2
-  return (TypeDeclaration name typ, ps3)
-parseTypeDeclaration ParserState{currentToken = Located pos _} =
-  Left (ParseError pos "Ожидался идентификатор типа")
+parseTypeDecls :: ParserState -> ParserResult [TypeDeclaration]
+parseTypeDecls ps
+  | current ps `elem` [L.VarKW, L.BeginKW] = pure ([], ps)
+  | otherwise = do
+      (d , ps1) <- parseTypeDecl ps
+      ps2       <- match L.Semicolon ps1
+      (ds, ps3) <- parseTypeDecls ps2
+      pure (d:ds, ps3)
 
--- Парсер типа
--- Type = "REAL"
---      | "INTEGER"
---      | "POINTER" "TO" Type
---      | "RECORD" ( "(" Ident ")" )? ( FieldDeclaration ";" )* "END"
+parseTypeDecl :: ParserState -> ParserResult TypeDeclaration
+parseTypeDecl ps = case current ps of
+  L.Ident name -> do
+    ps1        <- match (L.Ident name) ps
+    ps2        <- match L.Equal ps1
+    (ty, ps3)  <- parseType ps2
+    pure (TypeDeclaration name ty, ps3)
+  _ -> Left $ AST.ParseError (currentPos ps) "ожидался идентификатор типа"
+
+-- Type ::= REAL | INTEGER | POINTER TO Type | RECORD … END
 parseType :: ParserState -> ParserResult Type
 parseType ps = case current ps of
-  RealKW -> do
-    ps1 <- match RealKW ps
-    return (RealType, ps1)
-  
-  IntegerKW -> do
-    ps1 <- match IntegerKW ps
-    return (IntegerType, ps1)
-  
-  PointerKW -> do
-    ps1 <- match PointerKW ps
-    ps2 <- match ToKW ps1
-    (baseType, ps3) <- parseType ps2
-    return (PointerType baseType, ps3)
-  
-  RecordKW -> do
-    ps1 <- match RecordKW ps
-    -- Опциональный родительский тип
+  L.RealKW    -> match L.RealKW ps    >>= \ps' -> pure (RealType,    ps')
+  L.IntegerKW -> match L.IntegerKW ps >>= \ps' -> pure (IntegerType, ps')
+  L.PointerKW -> do
+    ps1         <- match L.PointerKW ps >>= match L.ToKW
+    (base, ps2) <- parseType ps1
+    pure (PointerType base, ps2)
+  L.RecordKW  -> do
+    ps1 <- match L.RecordKW ps
     (parent, ps2) <- case current ps1 of
-      LParen -> do
-        ps' <- match LParen ps1
+      L.LParen -> do
+        ps' <- match L.LParen ps1
         case current ps' of
-          Ident name -> do
-            ps'' <- match (Ident name) ps'
-            ps''' <- match RParen ps''
-            return (Just name, ps''')
-          _ -> Left (ParseError (currentPos ps') "Ожидался идентификатор родительского типа")
-      _ -> Right (Nothing, ps1)
-    
-    -- Поля записи
-    (fields, ps3) <- parseFieldDeclarations ps2
-    ps4 <- match EndKW ps3
-    return (RecordType parent fields, ps4)
-  
-  _ -> Left (ParseError (currentPos ps) "Ожидалось объявление типа")
+          L.Ident base -> match (L.Ident base) ps' >>= match L.RParen >>= \ps'' -> pure (Just base, ps'')
+          _            -> Left $ AST.ParseError (currentPos ps') "ожидался идентификатор базового типа"
+      _ -> pure (Nothing, ps1)
+    (fields, ps3) <- parseFieldDecls ps2
+    ps4           <- match L.EndKW ps3
+    pure (RecordType parent fields, ps4)
+  _ -> Left $ AST.ParseError (currentPos ps) "неизвестный тип"
 
--- Парсер объявлений полей записи
--- ( FieldDeclaration ";" )*
-parseFieldDeclarations :: ParserState -> ParserResult [FieldDeclaration]
-parseFieldDeclarations ps = 
-  if current ps == EndKW
-  then Right ([], ps)
-  else do
-    (decl, ps1) <- parseFieldDeclaration ps
-    ps2 <- match Semicolon ps1
-    (decls, ps3) <- parseFieldDeclarations ps2
-    return (decl : decls, ps3)
+parseFieldDecls :: ParserState -> ParserResult [FieldDeclaration]
+parseFieldDecls ps
+  | current ps == L.EndKW = pure ([], ps)
+  | otherwise             = do
+      (fd , ps1) <- parseFieldDecl ps
+      ps2        <- match L.Semicolon ps1
+      (fds, ps3) <- parseFieldDecls ps2
+      pure (fd:fds, ps3)
 
--- Парсер объявления поля записи
--- FieldDeclaration = IdentList ":" Type
-parseFieldDeclaration :: ParserState -> ParserResult FieldDeclaration
-parseFieldDeclaration ps = do
-  (names, ps1) <- parseIdentList ps
-  ps2 <- match Colon ps1
-  (typ, ps3) <- parseType ps2
-  return (FieldDeclaration names typ, ps3)
+parseFieldDecl :: ParserState -> ParserResult FieldDeclaration
+parseFieldDecl ps = do
+  (ids, ps1) <- parseIdentList ps
+  ps2        <- match L.Colon ps1
+  (ty, ps3)  <- parseType ps2
+  pure (FieldDeclaration ids ty, ps3)
 
--- Парсер списка идентификаторов
--- IdentList = Ident ( "," Ident )*
 parseIdentList :: ParserState -> ParserResult [String]
-parseIdentList ps@ParserState{currentToken = Located _ (Ident name)} = do
-  ps1 <- match (Ident name) ps
-  if current ps1 == Comma
-  then do
-    ps2 <- match Comma ps1
-    (rest, ps3) <- parseIdentList ps2
-    return (name : rest, ps3)
-  else
-    return ([name], ps1)
-parseIdentList ParserState{currentToken = Located pos _} =
-  Left (ParseError pos "Ожидался идентификатор")
-
--- Парсер объявлений переменных
--- ( VarDeclaration ";" )*
-parseVarDeclarations :: ParserState -> ParserResult [VarDeclaration]
-parseVarDeclarations ps = 
-  if current ps == BeginKW
-  then Right ([], ps)
-  else do
-    (decl, ps1) <- parseVarDeclaration ps
-    ps2 <- match Semicolon ps1
-    (decls, ps3) <- parseVarDeclarations ps2
-    return (decl : decls, ps3)
-
--- Парсер объявления переменной
--- VarDeclaration = IdentList ":" Type
-parseVarDeclaration :: ParserState -> ParserResult VarDeclaration
-parseVarDeclaration ps = do
-  (names, ps1) <- parseIdentList ps
-  ps2 <- match Colon ps1
-  (typ, ps3) <- parseType ps2
-  return (VarDeclaration names typ, ps3)
-
--- Парсер последовательности операторов
--- StatementSequence = Statement ( ";" Statement )*
-parseStatementSequence :: ParserState -> ParserResult [Statement]
-parseStatementSequence ps =
-  if current ps `elem` [EndKW, ElseKW]
-  then Right ([], ps)
-  else do
-    (stmt, ps1) <- parseStatement ps
-    if current ps1 == Semicolon
-    then do
-      ps2 <- match Semicolon ps1
-      (stmts, ps3) <- parseStatementSequence ps2
-      return (stmt : stmts, ps3)
-    else
-      return ([stmt], ps1)
-
--- Парсер оператора
--- Statement = Assignment
---           | IfStatement
---           | WhileStatement
---           | NewStatement
-parseStatement :: ParserState -> ParserResult Statement
-parseStatement ps = case current ps of
-  IfKW -> parseIfStatement ps
-  WhileKW -> parseWhileStatement ps
-  NewKW -> parseNewStatement ps
-  Ident _ -> parseAssignment ps
-  _ -> Left (ParseError (currentPos ps) "Ожидался оператор")
-
--- Парсер оператора присваивания
--- Assignment = Designator ":=" Expression
-parseAssignment :: ParserState -> ParserResult Statement
-parseAssignment ps = do
-  (desig, ps1) <- parseDesignator ps
-  ps2 <- match Assign ps1
-  (expr, ps3) <- parseExpression ps2
-  return (Assignment desig expr, ps3)
-
--- Парсер условного оператора
--- IfStatement = "IF" Expression "THEN" StatementSequence ( "ELSE" StatementSequence )? "END"
-parseIfStatement :: ParserState -> ParserResult Statement
-parseIfStatement ps = do
-  ps1 <- match IfKW ps
-  (cond, ps2) <- parseExpression ps1
-  ps3 <- match ThenKW ps2
-  (thenStmts, ps4) <- parseStatementSequence ps3
-  
-  -- Опциональная ELSE-ветка
-  (elseStmts, ps5) <- case current ps4 of
-    ElseKW -> do
-      ps' <- match ElseKW ps4
-      (stmts, ps'') <- parseStatementSequence ps'
-      return (Just stmts, ps'')
-    _ -> Right (Nothing, ps4)
-  
-  ps6 <- match EndKW ps5
-  return (IfStatement cond thenStmts elseStmts, ps6)
-
--- Парсер оператора цикла
--- WhileStatement = "WHILE" Expression "DO" StatementSequence "END"
-parseWhileStatement :: ParserState -> ParserResult Statement
-parseWhileStatement ps = do
-  ps1 <- match WhileKW ps
-  (cond, ps2) <- parseExpression ps1
-  ps3 <- match DoKW ps2
-  (stmts, ps4) <- parseStatementSequence ps3
-  ps5 <- match EndKW ps4
-  return (WhileStatement cond stmts, ps5)
-
--- Парсер оператора NEW
--- NewStatement = "NEW" "(" Designator ")"
-parseNewStatement :: ParserState -> ParserResult Statement
-parseNewStatement ps = do
-  ps1 <- match NewKW ps
-  ps2 <- match LParen ps1
-  (desig, ps3) <- parseDesignator ps2
-  ps4 <- match RParen ps3
-  return (NewStatement desig, ps4)
-
--- Парсер выражения
--- Expression = SimpleExpression ( Relation SimpleExpression )?
-parseExpression :: ParserState -> ParserResult Expression
-parseExpression ps = do
-  (left, ps1) <- parseSimpleExpression ps
-  case current ps1 of
-    Equal -> do
-      ps2 <- match Equal ps1
-      (right, ps3) <- parseSimpleExpression ps2
-      return (Relation left Equal right, ps3)
-    NotEqual -> do
-      ps2 <- match NotEqual ps1
-      (right, ps3) <- parseSimpleExpression ps2
-      return (Relation left NotEqual right, ps3)
-    Less -> do
-      ps2 <- match Less ps1
-      (right, ps3) <- parseSimpleExpression ps2
-      return (Relation left Less right, ps3)
-    LessEqual -> do
-      ps2 <- match LessEqual ps1
-      (right, ps3) <- parseSimpleExpression ps2
-      return (Relation left LessEqual right, ps3)
-    Greater -> do
-      ps2 <- match Greater ps1
-      (right, ps3) <- parseSimpleExpression ps2
-      return (Relation left Greater right, ps3)
-    GreaterEqual -> do
-      ps2 <- match GreaterEqual ps1
-      (right, ps3) <- parseSimpleExpression ps2
-      return (Relation left GreaterEqual right, ps3)
-    _ -> return (SimpleExpr left, ps1)
-
--- Парсер простого выражения
--- SimpleExpression = ( "+" | "-" )? Term ( AddOp Term )*
-parseSimpleExpression :: ParserState -> ParserResult SimpleExpression
-parseSimpleExpression ps = do
-  -- Опциональный унарный знак
-  (sign, ps1) <- case current ps of
-    Plus -> do
-      ps' <- match Plus ps
-      return (Just Plus, ps')
-    Minus -> do
-      ps' <- match Minus ps
-      return (Just Minus, ps')
-    _ -> Right (Nothing, ps)
-  
-  -- Преобразование знака в тип Sign
-  let signType = case sign of
-        Just Plus -> Just AST.Plus
-        Just Minus -> Just AST.Minus
-        _ -> Nothing
-  
-  -- Первый терм
-  (firstTerm, ps2) <- parseTerm ps1
-  (terms, ps3) <- parseTermsWithOps ps2 []
-  
-  return (SimpleExpression signType (TermWithOp firstTerm Nothing : terms), ps3)
-
--- Вспомогательная функция для разбора последовательности термов с операциями
-parseTermsWithOps :: ParserState -> [TermWithOp] -> ParserResult [TermWithOp]
-parseTermsWithOps ps acc = case current ps of
-  Plus -> do
-    ps1 <- match Plus ps
-    (term, ps2) <- parseTerm ps1
-    parseTermsWithOps ps2 (acc ++ [TermWithOp term (Just Add)])
-  Minus -> do
-    ps1 <- match Minus ps
-    (term, ps2) <- parseTerm ps1
-    parseTermsWithOps ps2 (acc ++ [TermWithOp term (Just Subtract)])
-  OrKW -> do
-    ps1 <- match OrKW ps
-    (term, ps2) <- parseTerm ps1
-    parseTermsWithOps ps2 (acc ++ [TermWithOp term (Just Or)])
-  _ -> Right (acc, ps)
-
--- Парсер терма
--- Term = Factor ( MulOp Factor )*
-parseTerm :: ParserState -> ParserResult Term
-parseTerm ps = do
-  (fact, ps1) <- parseFactor ps
-  (factors, ps2) <- parseFactorsWithOps ps1 []
-  return (Term fact factors, ps2)
-
--- Вспомогательная функция для разбора последовательности факторов с операциями
-parseFactorsWithOps :: ParserState -> [(MulOp, Factor)] -> ParserResult [(MulOp, Factor)]
-parseFactorsWithOps ps acc = case current ps of
-  Multiply -> do
-    ps1 <- match Multiply ps
-    (fact, ps2) <- parseFactor ps1
-    parseFactorsWithOps ps2 (acc ++ [(Multiply, fact)])
-  Divide -> do
-    ps1 <- match Divide ps
-    (fact, ps2) <- parseFactor ps1
-    parseFactorsWithOps ps2 (acc ++ [(Divide, fact)])
-  DivKW -> do
-    ps1 <- match DivKW ps
-    (fact, ps2) <- parseFactor ps1
-    parseFactorsWithOps ps2 (acc ++ [(Div, fact)])
-  ModKW -> do
-    ps1 <- match ModKW ps
-    (fact, ps2) <- parseFactor ps1
-    parseFactorsWithOps ps2 (acc ++ [(Mod, fact)])
-  AndKW -> do
-    ps1 <- match AndKW ps
-    (fact, ps2) <- parseFactor ps1
-    parseFactorsWithOps ps2 (acc ++ [(And, fact)])
-  _ -> Right (acc, ps)
-
--- Парсер фактора
--- Factor = DesignatorExpr
---        | IntLiteral
---        | RealLiteral
---        | "(" Expression ")"
---        | "NOT" Factor
-parseFactor :: ParserState -> ParserResult Factor
-parseFactor ps = case current ps of
-  IntLit val -> do
-    ps1 <- match (IntLit val) ps
-    return (IntLiteral val, ps1)
-  RealLit val -> do
-    ps1 <- match (RealLit val) ps
-    return (RealLiteral val, ps1)
-  LParen -> do
-    ps1 <- match LParen ps
-    (expr, ps2) <- parseExpression ps1
-    ps3 <- match RParen ps2
-    return (ParenExpression expr, ps3)
-  NotKW -> do
-    ps1 <- match NotKW ps
-    (fact, ps2) <- parseFactor ps1
-    return (NotFactor fact, ps2)
-  Ident _ -> do
-    (desig, ps1) <- parseDesignator ps
-    return (DesignatorFactor desig, ps1)
-  _ -> Left (ParseError (currentPos ps) "Ожидался фактор")
-
--- Парсер пути доступа (designator)
--- Designator = Ident ( Selector )*
-parseDesignator :: ParserState -> ParserResult Designator
-parseDesignator ps@ParserState{currentToken = Located _ (Ident name)} = do
-  ps1 <- match (Ident name) ps
-  (selectors, ps2) <- parseSelectors ps1 []
-  return (Designator name selectors, ps2)
-parseDesignator ParserState{currentToken = Located pos _} =
-  Left (ParseError pos "Ожидался идентификатор")
-
--- Парсер последовательности селекторов
--- ( Selector )*
-parseSelectors :: ParserState -> [Selector] -> ParserResult ([Selector], ParserState)
-parseSelectors ps acc = case current ps of
-  Dot -> do
-    ps1 <- match Dot ps
+parseIdentList ps = case current ps of
+  L.Ident nm -> do
+    ps1 <- match (L.Ident nm) ps
     case current ps1 of
-      Ident name -> do
-        ps2 <- match (Ident name) ps1
-        parseSelectors ps2 (acc ++ [FieldSelector name])
-      _ -> Left (ParseError (currentPos ps1) "Ожидался идентификатор поля")
-  Caret -> do
-    ps1 <- match Caret ps
-    parseSelectors ps1 (acc ++ [Dereference])
-  _ -> Right (acc, ps)
+      L.Comma -> do
+        ps2            <- match L.Comma ps1
+        (rest, ps3)    <- parseIdentList ps2
+        pure (nm:rest, ps3)
+      _       -> pure ([nm], ps1)
+  _ -> Left $ AST.ParseError (currentPos ps) "ожидался идентификатор"
 
--- Функция конвертации токена в RelOp
-tokenToRelOp :: Token -> AST.RelOp
-tokenToRelOp Equal = AST.Equal
-tokenToRelOp NotEqual = AST.NotEqual
-tokenToRelOp Less = AST.Less
-tokenToRelOp LessEqual = AST.LessEqual
-tokenToRelOp Greater = AST.Greater
-tokenToRelOp GreaterEqual = AST.GreaterEqual
-tokenToRelOp _ = error "Неверный токен для отношения" 
+-------------------------------------------------------------------------------
+-- VAR declarations -----------------------------------------------------------
+-------------------------------------------------------------------------------
+
+parseVarDecls :: ParserState -> ParserResult [VarDeclaration]
+parseVarDecls ps
+  | current ps == L.BeginKW = pure ([], ps)
+  | otherwise               = do
+      (vd , ps1) <- parseVarDecl ps
+      ps2        <- match L.Semicolon ps1
+      (vds, ps3) <- parseVarDecls ps2
+      pure (vd:vds, ps3)
+
+parseVarDecl :: ParserState -> ParserResult VarDeclaration
+parseVarDecl ps = do
+  (ids, ps1) <- parseIdentList ps
+  ps2        <- match L.Colon ps1
+  (ty , ps3) <- parseType ps2
+  pure (VarDeclaration ids ty, ps3)
+
+-------------------------------------------------------------------------------
+-- Statements -----------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+parseStmtSeq :: ParserState -> ParserResult [Statement]
+parseStmtSeq ps = case current ps of
+  L.EndKW  -> pure ([], ps)
+  L.ElseKW -> pure ([], ps)
+  _        -> do
+    (s , ps1) <- parseStmt ps
+    (ss, ps2) <- parseStmtSeq ps1
+    pure (s:ss, ps2)
+
+parseStmt :: ParserState -> ParserResult Statement
+parseStmt ps = case current ps of
+  L.IfKW    -> parseIf ps
+  L.WhileKW -> parseWhile ps
+  L.NewKW   -> parseNew ps
+  L.Ident _ -> parseAssign ps
+  _         -> Left $ AST.ParseError (currentPos ps) "ожидался оператор"
+
+-- Assignment ::= Designator := Expression
+parseAssign :: ParserState -> ParserResult Statement
+parseAssign ps = do
+  (des, ps1) <- parseDesignator ps
+  ps2        <- match L.Assign ps1
+  (e  , ps3) <- parseExpr ps2
+  pure (Assignment des e, ps3)
+
+-------------------------------------------------------------------------------
+-- IF … THEN … [ELSE …] END ---------------------------------------------------
+-------------------------------------------------------------------------------
+
+parseIf :: ParserState -> ParserResult Statement
+parseIf ps = do
+  ps1            <- match L.IfKW ps
+  (cond , ps2)   <- parseExpr ps1
+  ps3            <- match L.ThenKW ps2
+  (thenB, ps4)   <- parseStmtSeq ps3
+  (elseB, ps5)   <- case current ps4 of
+    L.ElseKW -> match L.ElseKW ps4 >>= parseStmtSeq >>= \(es, ps') -> pure (Just es, ps')
+    _        -> pure (Nothing, ps4)
+  ps6            <- match L.EndKW ps5
+  pure (IfStatement cond thenB elseB, ps6)
+
+-------------------------------------------------------------------------------
+-- WHILE … DO … END -----------------------------------------------------------
+-------------------------------------------------------------------------------
+
+parseWhile :: ParserState -> ParserResult Statement
+parseWhile ps = do
+  ps1           <- match L.WhileKW ps
+  (cond, ps2)   <- parseExpr ps1
+  ps3           <- match L.DoKW ps2
+  (body, ps4)   <- parseStmtSeq ps3
+  ps5           <- match L.EndKW ps4
+  pure (WhileStatement cond body, ps5)
+
+-------------------------------------------------------------------------------
+-- NEW ( designator ) ---------------------------------------------------------
+-------------------------------------------------------------------------------
+
+parseNew :: ParserState -> ParserResult Statement
+parseNew ps = do
+  ps1         <- match L.NewKW ps
+  ps2         <- match L.LParen ps1
+  (des, ps3)  <- parseDesignator ps2
+  ps4         <- match L.RParen ps3
+  pure (NewStatement des, ps4)
+
+-------------------------------------------------------------------------------
+-- Expressions ----------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+parseExpr :: ParserState -> ParserResult Expression
+parseExpr ps = do
+  (lhs, ps1) <- parseSimpleExpr ps
+  case current ps1 of
+    tok | tok `elem` relToks -> do
+      ps2           <- match tok ps1
+      (rhs, ps3)    <- parseSimpleExpr ps2
+      pure (Relation lhs (tokToRel tok) rhs, ps3)
+    _ -> pure (SimpleExpr lhs
+
