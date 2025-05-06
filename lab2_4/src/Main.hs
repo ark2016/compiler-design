@@ -19,9 +19,13 @@ main = do
     ["--debug", filePath] -> do
       fileContent <- readFile filePath
       parseFileWithDebug fileContent
+    ["--tokens", filePath] -> do
+      fileContent <- readFile filePath
+      showTokens fileContent
     _ -> do
       putStrLn "Использование: oberon-parser <имя_файла>"
       putStrLn "             или oberon-parser --debug <имя_файла> для вывода АСД"
+      putStrLn "             или oberon-parser --tokens <имя_файла> для вывода токенов"
       exitFailure
 
 -- Функция для парсинга файла и вывода результата
@@ -50,6 +54,15 @@ parseFileWithDebug input =
           putStrLn "Синтаксический анализ успешно завершен."
           putStrLn "Абстрактное синтаксическое дерево:"
           print ast
+
+-- Функция для отображения только токенов
+showTokens :: String -> IO ()
+showTokens input = 
+  case tokenize input of
+    Left err -> printError err
+    Right tokens -> do
+      putStrLn "Токены:"
+      mapM_ (\t -> putStrLn $ show t) tokens
 
 -- Функция для вывода ошибок
 printError :: ParseError -> IO ()

@@ -57,10 +57,28 @@ advance ls@LexerState{source=s:ss, position=(row, col)} =
     currentChar = if null ss then Nothing else Just (head ss)
   }
 
+-- Предварительная обработка - удаление комментариев из исходного текста
+removeComments :: String -> String
+removeComments [] = []
+removeComments ('(':rest) = 
+  case rest of
+    '*':moreRest -> removeComments (skipComment moreRest 1)
+    _ -> '(' : removeComments rest
+  where
+    skipComment :: String -> Int -> String
+    skipComment [] _ = []  -- Если достигли конца ввода, комментарий не закрыт
+    skipComment ('*':')':rs) 1 = rs
+    skipComment ('(':'*':rs) level = skipComment rs (level + 1)
+    skipComment ('*':')':rs) level = skipComment rs (level - 1)
+    skipComment (c:rs) level = skipComment rs level
+removeComments (c:rest) = c : removeComments rest
+
 -- Получение всех токенов из исходного текста
 tokenize :: String -> Either ParseError [Located Token]
 tokenize input = do
-  let initialState = initLexer input
+  -- Сначала удаляем комментарии
+  let processedInput = removeComments input
+  let initialState = initLexer processedInput
   case runLexer initialState of
     Left err -> Left err
     Right lexState -> Right (reverse $ tokens lexState)
@@ -84,9 +102,6 @@ getNextToken :: LexerState -> Either ParseError LexerState
 getNextToken ls@LexerState{currentChar=Nothing} = Right (addToken ls EOF)
 getNextToken ls@LexerState{currentChar=Just c}
   | isSpace c = getNextToken (skipWhitespace ls)
-  | c == '(' = case peekNext ls of
-               Just '*' -> getNextToken (skipComment ls)
-               _        -> lexSymbol ls
   | isAlpha c = Right (lexIdentOrKeyword ls)
   | isDigit c = lexNumber ls
   | otherwise = lexSymbol ls
@@ -102,19 +117,6 @@ skipWhitespace ls@LexerState{currentChar=Just c}
 peekNext :: LexerState -> Maybe Char
 peekNext LexerState{source=""} = Nothing
 peekNext LexerState{source=s:_} = Just s
-
--- Пропуск комментариев (* ... *)
-skipComment :: LexerState -> LexerState
-skipComment ls = skipCommentBody (advance (advance ls))  -- пропускаем '(' и '*'
-
-skipCommentBody :: LexerState -> LexerState
-skipCommentBody ls@LexerState{currentChar=Nothing} =
-  error "Незакрытый комментарий"
-skipCommentBody ls@LexerState{currentChar=Just '*'} =
-  case peekNext ls of
-    Just ')' -> advance (advance ls)  -- пропускаем '*' и ')'
-    _ -> skipCommentBody (advance ls)
-skipCommentBody ls = skipCommentBody (advance ls)
 
 -- Распознавание идентификатора или ключевого слова
 lexIdentOrKeyword :: LexerState -> LexerState
@@ -201,3 +203,4 @@ lexSymbol ls@LexerState{currentChar=Just c, position=pos} =
     '^' -> Right (addToken (advance ls) Caret)
     _ -> Left (ParseError pos $ "Неожиданный символ: " ++ [c])
 lexSymbol _ = error "Невозможное состояние в lexSymbol" 
+
