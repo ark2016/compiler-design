@@ -1,0 +1,14 @@
+TYPE
+  Point = RECORD
+    x, y : REAL;
+  END;
+
+VAR
+  p1 : Point;
+BEGIN
+  p1.x := 10;
+  
+  (* Это комментарий *)
+  
+  p1.y := 3.5;
+END. 

@@ -178,13 +178,23 @@ parseStmtSeq :: ParserState -> ParserResult [AST.Statement]
 parseStmtSeq ps = case current ps of
   L.EndKW  -> pure ([], ps)
   L.ElseKW -> pure ([], ps)
+  L.Semicolon -> do
+    -- Пропускаем точку с запятой и продолжаем разбор
+    ps1 <- match L.Semicolon ps
+    parseStmtSeq ps1
   _        -> do
-    (s, ps1) <- parseStmt ps
-    ps2 <- case current ps1 of
-      L.Semicolon -> match L.Semicolon ps1
-      _ -> pure ps1
-    (ss, ps3) <- parseStmtSeq ps2
-    pure (s:ss, ps3)
+    -- Попытка разбора оператора
+    case parseStmt ps of
+      Left _ -> 
+        -- Если не получилось, возвращаем пустую последовательность
+        pure ([], ps)
+      Right (s, ps1) -> do
+        -- Точка с запятой после оператора необязательна
+        ps2 <- case current ps1 of
+          L.Semicolon -> match L.Semicolon ps1
+          _ -> pure ps1
+        (ss, ps3) <- parseStmtSeq ps2
+        pure (s:ss, ps3)
 
 parseStmt :: ParserState -> ParserResult AST.Statement
 parseStmt ps = case current ps of
