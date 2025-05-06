@@ -101,7 +101,6 @@ tryParseWithCounter parser ps attempts
   | attempts <= 0 = 
       -- Превышено максимальное количество попыток восстановления
       let err = AST.ParseError (currentPos ps) "превышено количество попыток восстановления"
-          ps' = addError err ps
       in Left err
   | otherwise = case parser ps of
       Right res -> Right res
@@ -113,8 +112,6 @@ tryParseWithCounter parser ps attempts
                 if isEOF ps
                 then Left $ AST.ParseError (currentPos ps) "неожиданный конец файла, невозможно продолжить анализ"
                 else let newPs = advance ps
-                         newErr = AST.ParseError (currentPos ps) ("пропущен токен " ++ show (current ps))
-                         ps'' = addError newErr ps'
                      in tryParseWithCounter parser newPs (attempts - 1)
            else tryParseWithCounter parser recoveredPs (attempts - 1)
   where
@@ -405,10 +402,6 @@ parseStmtSeq ps
              then -- Если позиция не изменилась, значит не удалось восстановиться
                   -- В этом случае пропускаем текущий токен и продолжаем разбор
                   let newPs = advance ps
-                      errorMsg = if isEOF newPs 
-                                 then "неожиданный конец файла, возможно незакрытый комментарий"
-                                 else "пропущен токен " ++ show (current ps)
-                      ps' = addError (AST.ParseError (currentPos ps) errorMsg) ps
                   in Right ([], newPs)
              else tryParse parseStmtSeq ps''
         Right (s, ps1) -> do
