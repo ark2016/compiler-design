@@ -45,6 +45,9 @@ library
 executable oberon-parser
   hs-source-dirs:      src
   main-is:             Main.hs
+  other-modules:       AST
+  		       Lexer
+		       Parser
   default-language:    Haskell2010
   default-extensions:  RecordWildCards
                        NamedFieldPuns
@@ -53,6 +56,6 @@ executable oberon-parser
                        containers,
                        mtl,
                        transformers
-  ghc-options:         -Wall -Werror -Wno-unused-matches -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -Wall
 
 
