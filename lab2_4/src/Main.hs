@@ -50,13 +50,18 @@ parseFile input =
 parseFileWithRecovery :: String -> IO ()
 parseFileWithRecovery input = 
   case tokenize input of
-    Left err -> printErrorFatal err
-    Right tokens -> 
+    Left err -> do
+      printErrorMsg err
+      putStrLn "Ошибка лексического анализа, восстановление невозможно."
+      exitFailure
+    Right tokens -> do
+      putStrLn "Выполняется анализ с восстановлением после ошибок..."
       case parseProgram tokens of
         Left errors -> do
-          putStrLn "Обнаружены ошибки:"
-          mapM_ printErrorNonFatal errors
-          putStrLn "\nПарсер восстановился после ошибок и продолжил анализ."
+          putStrLn "Обнаружены следующие ошибки:"
+          mapM_ printErrorMsg errors
+          putStrLn $ "\nВсего обнаружено " ++ show (length errors) ++ " ошибок."
+          putStrLn "Парсер попытался восстановиться после ошибок и продолжить анализ."
         Right ast -> do
           putStrLn "Синтаксический анализ успешно завершен."
           putStrLn "Абстрактное синтаксическое дерево построено."

@@ -24,7 +24,18 @@ type ParserResult a = Either AST.ParseError (a, ParserState)
 
 -- Точки синхронизации - токены, до которых можно восстановиться
 syncTokens :: [L.Token]
-syncTokens = [L.Semicolon, L.EndKW, L.BeginKW, L.TypeKW, L.VarKW, L.Period]
+syncTokens = [
+  L.Semicolon, L.EndKW, L.BeginKW, L.TypeKW, L.VarKW, 
+  L.Period, L.IfKW, L.ThenKW, L.ElseKW, L.WhileKW, L.DoKW,
+  L.Ident "", L.IntLit 0, L.RealLit 0.0
+  ]
+
+-- Проверка, является ли токен совместимым с синхронизацией
+isCompatibleWithSync :: L.Token -> Bool
+isCompatibleWithSync (L.Ident _) = True
+isCompatibleWithSync (L.IntLit _) = True
+isCompatibleWithSync (L.RealLit _) = True
+isCompatibleWithSync token = token `elem` syncTokens
 
 initParser :: [AST.Located L.Token] -> ParserState
 initParser []       = error "Parser: empty token list"
@@ -58,9 +69,9 @@ matchWithRecovery expected ps@ParserState{currentToken = AST.Located p actual, e
 -- Восстановление после ошибки - пропуск токенов до точки синхронизации
 recover :: ParserState -> ParserState
 recover ps
-  | current ps `elem` syncTokens = ps
-  | isEOF ps = ps
-  | otherwise = recover (advance ps)
+  | isEOF ps = ps  -- Если достигнут конец файла, возвращаем текущее состояние
+  | isCompatibleWithSync (current ps) = advance ps  -- Если нашли токен синхронизации, двигаемся дальше
+  | otherwise = recover (advance ps)  -- Иначе продвигаемся и продолжаем искать
 
 isEOF :: ParserState -> Bool
 isEOF = (== L.EOF) . current
@@ -73,14 +84,28 @@ addError err ps = ps { errors = err : errors ps }
 getErrors :: ParserState -> [AST.ParseError]
 getErrors = reverse . errors
 
--- Запуск парсера с восстановлением
+-- Защита от бесконечного цикла при восстановлении
+maxRecoveryAttempts :: Int
+maxRecoveryAttempts = 100
+
+-- Запуск парсера с восстановлением и защитой от зацикливания
 tryParse :: (ParserState -> ParserResult a) -> ParserState -> ParserResult a
-tryParse parser ps = case parser ps of
-  Right res -> Right res
-  Left err -> 
-    let ps' = addError err ps
-        recoveredPs = recover ps'
-    in parser recoveredPs
+tryParse parser ps = tryParseWithCounter parser ps maxRecoveryAttempts
+
+-- Версия tryParse с счетчиком попыток для избегания зацикливания
+tryParseWithCounter :: (ParserState -> ParserResult a) -> ParserState -> Int -> ParserResult a
+tryParseWithCounter parser ps attempts
+  | attempts <= 0 = Left $ AST.ParseError (currentPos ps) "превышено количество попыток восстановления"
+  | otherwise = case parser ps of
+      Right res -> Right res
+      Left err -> 
+        let ps' = addError err ps
+            recoveredPs = recover ps'
+        in if posEqual ps recoveredPs
+           then Left $ AST.ParseError (currentPos ps) "не удалось восстановиться после ошибки"
+           else tryParseWithCounter parser recoveredPs (attempts - 1)
+  where
+    posEqual a b = currentPos a == currentPos b
 
 -- Альтернативная функция для попытки разбора с выбором первого успешного
 tryAlternatives :: [ParserState -> ParserResult a] -> ParserState -> ParserResult a
@@ -124,37 +149,52 @@ parseProgram toks = do
 
 parseProgram' :: ParserState -> ParserResult AST.Program
 parseProgram' ps = do
-  (types, ps1) <- case current ps of
-    L.TypeKW -> tryParse parseTypeDecls (advance ps)
-    _        -> pure ([], ps)
-  (vars , ps2) <- case current ps1 of
-    L.VarKW  -> tryParse parseVarDecls (advance ps1)
-    _        -> pure ([], ps1)
-  
-  ps3 <- case current ps2 of
-    L.BeginKW -> Right (advance ps2)
-    _ -> 
-      let err = AST.ParseError (currentPos ps2) "ожидался BEGIN"
-          ps' = addError err ps2
-      in Right (recover ps')
-
-  (body, ps4) <- tryParse parseStmtSeq ps3
-  
-  ps5 <- case current ps4 of
-    L.EndKW -> Right (advance ps4)
-    _ -> 
-      let err = AST.ParseError (currentPos ps4) "ожидался END"
-          ps' = addError err ps4
-      in Right (recover ps')
-
-  ps6 <- case current ps5 of
-    L.Period -> Right (advance ps5)
-    _ -> 
-      let err = AST.ParseError (currentPos ps5) "ожидался ."
-          ps' = addError err ps5
-      in Right (recover ps')
-
-  pure (AST.Program types vars body, ps6)
+  -- Проверка на EOF для обработки незакрытых комментариев
+  if isEOF ps 
+    then Left $ AST.ParseError (currentPos ps) "неожиданный конец файла, возможно, незакрытый комментарий"
+    else do
+      (types, ps1) <- case current ps of
+        L.TypeKW -> tryParse parseTypeDecls (advance ps)
+        _        -> pure ([], ps)
+      
+      (vars , ps2) <- case current ps1 of
+        L.VarKW  -> tryParse parseVarDecls (advance ps1)
+        _        -> pure ([], ps1)
+      
+      ps3 <- case current ps2 of
+        L.BeginKW -> Right (advance ps2)
+        _ -> 
+          let err = AST.ParseError (currentPos ps2) "ожидался BEGIN"
+              ps' = addError err ps2
+          in Right (recover ps')
+    
+      (body, ps4) <- tryParse parseStmtSeq ps3
+      
+      -- Обработка случая, когда END отсутствует (достигнут EOF)
+      ps5 <- case current ps4 of
+        L.EndKW -> Right (advance ps4)
+        L.EOF -> 
+          let err = AST.ParseError (currentPos ps4) "неожиданный конец файла, отсутствует END"
+              ps' = addError err ps4
+          in Right ps'
+        _ -> 
+          let err = AST.ParseError (currentPos ps4) "ожидался END"
+              ps' = addError err ps4
+          in Right (recover ps')
+    
+      -- Обработка отсутствия завершающей точки
+      ps6 <- case current ps5 of
+        L.Period -> Right (advance ps5)
+        L.EOF -> 
+          let err = AST.ParseError (currentPos ps5) "неожиданный конец файла, отсутствует точка"
+              ps' = addError err ps5
+          in Right ps'
+        _ -> 
+          let err = AST.ParseError (currentPos ps5) "ожидался ."
+              ps' = addError err ps5
+          in Right (recover ps')
+    
+      pure (AST.Program types vars body, ps6)
 
 -------------------------------------------------------------------------------
 -- TYPE declarations ----------------------------------------------------------
@@ -328,28 +368,31 @@ parseVarDecl ps = do
 -------------------------------------------------------------------------------
 
 parseStmtSeq :: ParserState -> ParserResult [AST.Statement]
-parseStmtSeq ps = case current ps of
-  L.EndKW  -> pure ([], ps)
-  L.ElseKW -> pure ([], ps)
-  L.Semicolon -> do
-    -- Пропускаем точку с запятой и продолжаем разбор
-    ps1 <- Right (advance ps)
-    tryParse parseStmtSeq ps1
-  _        -> do
-    -- Попытка разбора оператора
-    case tryParse parseStmt ps of
-      Left err -> 
-        -- Если не получилось, восстанавливаемся и продолжаем
-        let ps' = addError err ps
-            ps'' = recover ps'
-        in tryParse parseStmtSeq ps''
-      Right (s, ps1) -> do
-        -- Точка с запятой после оператора необязательна
-        ps2 <- case current ps1 of
-          L.Semicolon -> Right (advance ps1)
-          _ -> Right ps1
-        (ss, ps3) <- tryParse parseStmtSeq ps2
-        pure (s:ss, ps3)
+parseStmtSeq ps 
+  | current ps == L.EOF = Left $ AST.ParseError (currentPos ps) "неожиданный конец файла при разборе последовательности операторов"
+  | current ps == L.EndKW  = pure ([], ps)
+  | current ps == L.ElseKW = pure ([], ps)
+  | current ps == L.Semicolon = do
+      -- Пропускаем точку с запятой и продолжаем разбор
+      ps1 <- Right (advance ps)
+      tryParse parseStmtSeq ps1
+  | otherwise = do
+      -- Попытка разбора оператора
+      case tryParse parseStmt ps of
+        Left err -> 
+          -- Если не получилось, восстанавливаемся и продолжаем
+          let ps' = addError err ps
+              ps'' = recover ps'
+          in if currentPos ps == currentPos ps''
+             then Left $ AST.ParseError (currentPos ps) "не удалось восстановиться от ошибки в последовательности операторов"
+             else tryParse parseStmtSeq ps''
+        Right (s, ps1) -> do
+          -- Точка с запятой после оператора необязательна
+          ps2 <- case current ps1 of
+            L.Semicolon -> Right (advance ps1)
+            _ -> Right ps1
+          (ss, ps3) <- tryParse parseStmtSeq ps2
+          pure (s:ss, ps3)
 
 parseStmt :: ParserState -> ParserResult AST.Statement
 parseStmt ps = case current ps of
