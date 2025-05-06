@@ -1,9 +1,9 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
 
--- | Recursive‑descent parser for the Oberon subset (lab 2.4).
---   All lexer tokens are imported *qualified* (alias @L@) to avoid
---   clashes with identically‑named constructors in the AST.
+-- | Рекурсивно-нисходящий парсер для подмножества языка Oberon (лаб. 2.4).
+--   Все токены лексера импортированы *с уточнением* (алиас @L@) для избежания
+--   конфликтов с одноименными конструкторами в AST.
 module Parser where
 
 import           AST                       hiding (RelOp (..), Sign (..), AddOp (..), MulOp (..))
@@ -11,12 +11,12 @@ import qualified AST                       as AST
 import qualified Lexer                     as L
 
 -------------------------------------------------------------------------------
--- Parser state & helpers -----------------------------------------------------
+-- Состояние парсера и вспомогательные функции --------------------------------
 -------------------------------------------------------------------------------
 
 data ParserState = ParserState
-  { tokens       :: [AST.Located L.Token]   -- ^ remaining unconsumed tokens
-  , currentToken :: AST.Located L.Token     -- ^ look‑ahead (never empty)
+  { tokens       :: [AST.Located L.Token]   -- ^ оставшиеся необработанные токены
+  , currentToken :: AST.Located L.Token     -- ^ токен предпросмотра (никогда не пустой)
   , errors       :: [AST.ParseError]        -- ^ собранные ошибки парсинга
   }
 
@@ -59,7 +59,7 @@ match expected ps@ParserState{currentToken = AST.Located p actual, errors = errs
   | expected == actual = Right (advance ps)
   | otherwise = Left $ AST.ParseError p ("ожидался " ++ show expected ++ ", получен " ++ show actual)
 
--- Новая функция для восстановления с сохранением ошибки
+-- функция для восстановления с сохранением ошибки
 matchWithRecovery :: L.Token -> ParserState -> ParserResult ParserState
 matchWithRecovery expected ps@ParserState{currentToken = AST.Located p actual, errors = errs}
   | expected == actual = Right (advance ps, advance ps)
@@ -95,11 +95,10 @@ maxRecoveryAttempts = 100
 tryParse :: (ParserState -> ParserResult a) -> ParserState -> ParserResult a
 tryParse parser ps = tryParseWithCounter parser ps maxRecoveryAttempts
 
--- Версия tryParse с счетчиком попыток для избегания зацикливания
+-- tryParse с счетчиком попыток для избегания зацикливания
 tryParseWithCounter :: (ParserState -> ParserResult a) -> ParserState -> Int -> ParserResult a
 tryParseWithCounter parser ps attempts
   | attempts <= 0 = 
-      -- Превышено максимальное количество попыток восстановления
       let err = AST.ParseError (currentPos ps) "превышено количество попыток восстановления"
       in Left err
   | otherwise = case parser ps of
@@ -561,7 +560,7 @@ parseExpr ps = do
       pure (AST.Relation lhs (tokToRel tok) rhs, ps3)
     _ -> pure (AST.SimpleExpr lhs, ps1)
 
--- Simple expression with optional sign and terms
+-- Простое выражение с необязательными знаком и terms
 parseSimpleExpr :: ParserState -> ParserResult AST.SimpleExpression
 parseSimpleExpr ps = do
   -- Опциональный знак
@@ -688,7 +687,3 @@ parseSelectors ps = case current ps of
     (rest, ps2) <- tryParse parseSelectors ps1
     pure (AST.Dereference : rest, ps2)
   _ -> pure ([], ps)
-
-
-
-

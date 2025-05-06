@@ -1,28 +1,24 @@
 module AST where
 
--- Программа состоит из опционального раздела объявлений типов,
--- опционального раздела объявлений переменных и обязательного блока операторов
 data Program = Program {
     typeDeclarations :: [TypeDeclaration],
     varDeclarations :: [VarDeclaration],
     statements :: [Statement]
-} deriving (Show)
+} deriving (Show) 
 
--- Объявление типа связывает имя с определением типа
 data TypeDeclaration = TypeDeclaration {
     typeName :: String,
     typeDefinition :: Type
 } deriving (Show)
 
--- Различные виды типов
 data Type = RealType
           | IntegerType
           | PointerType Type
           | RecordType {
-              parentType :: Maybe String,
+              parentType :: Maybe String, 
               fields :: [FieldDeclaration]
             }
-          | NamedType String -- Именованный пользовательский тип
+          | NamedType String 
           deriving (Show)
 
 -- Объявление полей в записи
@@ -45,7 +41,7 @@ data Statement = Assignment {
                | IfStatement {
                    condition :: Expression,
                    thenBlock :: [Statement],
-                   elseBlock :: Maybe [Statement]
+                   elseBlock :: Maybe [Statement] -- Опциональный блок else
                  }
                | WhileStatement {
                    whileCondition :: Expression,
@@ -55,7 +51,7 @@ data Statement = Assignment {
                    newTarget :: Designator
                  }
                deriving (Show)
-
+    
 -- Выражения
 data Expression = Relation {
                     leftExpr :: SimpleExpression,
@@ -71,7 +67,7 @@ data RelOp = Equal | NotEqual | Less | LessEqual | Greater | GreaterEqual
 
 -- Простое выражение
 data SimpleExpression = SimpleExpression {
-                         sign :: Maybe Sign,
+                         sign :: Maybe Sign, -- Опциональный знак
                          terms :: [TermWithOp]
                        }
                      deriving (Show)
@@ -81,7 +77,7 @@ data Sign = Plus | Minus
 
 data TermWithOp = TermWithOp {
                    term :: Term,
-                   op :: Maybe AddOp
+                   op :: Maybe AddOp -- Опциональная операция
                  }
                deriving (Show)
 
@@ -91,7 +87,7 @@ data AddOp = Add | Subtract | Or
 -- Терм (множители, связанные операторами умножения)
 data Term = Term {
               factor :: Factor,
-              restFactors :: [(MulOp, Factor)]
+              restFactors :: [(MulOp, Factor)] -- Список пар: оператор и множитель
             }
           deriving (Show)
 
@@ -248,7 +244,8 @@ spaces :: Int -> String
 spaces n = replicate n ' '
 
 prettyList :: Pretty a => Int -> [a] -> String
-prettyList indent = concatMap (\x -> pretty indent x ++ "\n")
+prettyList indent = concatMap (\x -> spaces indent ++ pretty indent x ++ "\n")
+-- Ограничение типа Pretty a => означает, что тип a должен иметь экземпляр класса Pretty
 
 -- Функция для получения форматированного вывода AST
 prettyPrint :: Program -> String

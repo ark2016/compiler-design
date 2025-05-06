@@ -65,7 +65,7 @@ removeComments ('(':rest) =
     '*':moreRest -> removeComments (skipComment moreRest 1)
     _ -> '(' : removeComments rest
   where
-    skipComment :: String -> Int -> String
+    skipComment :: String -> Int -> String 
     skipComment [] _ = []  -- Если достигли конца ввода, комментарий не закрыт
     skipComment ('*':')':rs) 1 = rs
     skipComment ('(':'*':rs) level = skipComment rs (level + 1)
@@ -76,7 +76,6 @@ removeComments (c:rest) = c : removeComments rest
 -- Получение всех токенов из исходного текста
 tokenize :: String -> Either ParseError [Located Token]
 tokenize input = do
-  -- Сначала удаляем комментарии
   let processedInput = removeComments input
   let initialState = initLexer processedInput
   case runLexer initialState of
@@ -202,5 +201,5 @@ lexSymbol ls@LexerState{currentChar=Just c, position=pos} =
     ')' -> Right (addToken (advance ls) RParen)
     '^' -> Right (addToken (advance ls) Caret)
     _ -> Left (ParseError pos $ "Неожиданный символ: " ++ [c])
-lexSymbol _ = error "Невозможное состояние в lexSymbol" 
+lexSymbol _ = error "Невозможное состояние в lexSymbol"
 

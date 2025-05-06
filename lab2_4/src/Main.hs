@@ -135,7 +135,7 @@ parseFileWithRecovery input =
           putStrLn "Синтаксический анализ успешно завершен."
           putStrLn "Абстрактное синтаксическое дерево построено."
 
--- Функция для парсинга файла с выводом АСД
+-- Функция для парсинга файла с выводом AST
 parseFileWithDebug :: String -> IO ()
 parseFileWithDebug input = 
   case tokenize input of
