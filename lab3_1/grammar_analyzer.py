@@ -3,28 +3,49 @@ from common import EPSILON, EOF_TOKEN_TYPE, GrammarError, Token
 
 def extract_grammar_from_tree(gdl_root_node):
     extracted_axiom = None
+    axiom_count = 0  # Счетчик для проверки числа аксиом
     productions = {}
     non_terminals = set()
+    used_non_terminals = set()  # Для отслеживания используемых, но не объявленных нетерминалов
     token_map = {}
+    terminals = set()  # Инициализируем terminals до использования
 
     def find_child_by_symbol_name(node, symbol_name):
         return next((c for c in node.children if c.symbol == symbol_name), None)
 
-    axiom_gdl_node = find_child_by_symbol_name(gdl_root_node, 'AXIOM')
-    if not axiom_gdl_node or not axiom_gdl_node.children:
+    # Находим все объявления аксиом в грамматике
+    grammar_gdl_node = find_child_by_symbol_name(gdl_root_node, 'GRAMMAR')
+    current_node = gdl_root_node
+    
+    while current_node:
+        axiom_gdl_node = find_child_by_symbol_name(current_node, 'AXIOM')
+        if axiom_gdl_node and axiom_gdl_node.children:
+            axiom_count += 1
+            if axiom_count > 1:
+                # Если нашли более одной аксиомы, выдаем ошибку
+                ident_node_axiom = find_child_by_symbol_name(axiom_gdl_node, 'IDENT')
+                if ident_node_axiom and ident_node_axiom.token:
+                    raise GrammarError(f"Multiple axiom definitions found. Only one axiom is allowed.", ident_node_axiom.token)
+                else:
+                    raise GrammarError("Multiple axiom definitions found. Only one axiom is allowed.", axiom_gdl_node.children[0].token)
+            
+            ident_node_axiom = find_child_by_symbol_name(axiom_gdl_node, 'IDENT')
+            if not ident_node_axiom or not ident_node_axiom.token:
+                raise GrammarError("Axiom name (IDENT) not found in axiom definition.", axiom_gdl_node.children[0].token)
+            
+            extracted_axiom = ident_node_axiom.token.value
+            if not extracted_axiom:
+                raise GrammarError("Axiom name (IDENT) cannot be empty.", ident_node_axiom.token)
+            non_terminals.add(extracted_axiom)
+            token_map[extracted_axiom] = ident_node_axiom.token
+        
+        current_node = find_child_by_symbol_name(current_node, 'GRAMMAR')
+    
+    # Проверка существования аксиомы
+    if not extracted_axiom:
         first_lbracket_token_node = find_child_by_symbol_name(gdl_root_node, 'LBRACK')
         err_token_for_axiom = first_lbracket_token_node.token if first_lbracket_token_node else None
         raise GrammarError("Axiom definition ([axiom [...]}) not found.", err_token_for_axiom)
-    
-    ident_node_axiom = find_child_by_symbol_name(axiom_gdl_node, 'IDENT')
-    if not ident_node_axiom or not ident_node_axiom.token:
-        raise GrammarError("Axiom name (IDENT) not found in axiom definition.", axiom_gdl_node.children[0].token)
-    
-    extracted_axiom = ident_node_axiom.token.value
-    if not extracted_axiom:
-        raise GrammarError("Axiom name (IDENT) cannot be empty.", ident_node_axiom.token)
-    non_terminals.add(extracted_axiom)
-    token_map[extracted_axiom] = ident_node_axiom.token
 
     grammar_gdl_node = find_child_by_symbol_name(gdl_root_node, 'GRAMMAR')
     current_grammar_gdl_node = grammar_gdl_node
@@ -81,6 +102,9 @@ def extract_grammar_from_tree(gdl_root_node):
                     user_grammar_symbol_str = user_symbol_value
                     if user_symbol_value == "EOF": user_grammar_symbol_str = EOF_TOKEN_TYPE
                     elif not user_symbol_value: raise GrammarError("Empty IDENT in RHS.", actual_user_symbol_gdl_node.token)
+                    # Отмечаем использование нетерминала
+                    if user_grammar_symbol_str not in non_terminals:
+                        used_non_terminals.add(user_grammar_symbol_str)
                 elif user_symbol_type_in_gdl == 'KW_N': user_grammar_symbol_str = 'n'
                 elif user_symbol_type_in_gdl in ['OP', 'LPAREN', 'RPAREN']: user_grammar_symbol_str = user_symbol_value
                 else: raise GrammarError(f"Unknown GDL SYMBOL type '{user_symbol_type_in_gdl}'.", actual_user_symbol_gdl_node.token)
@@ -93,7 +117,6 @@ def extract_grammar_from_tree(gdl_root_node):
             else: break
         current_grammar_gdl_node = find_child_by_symbol_name(current_grammar_gdl_node, 'GRAMMAR')
 
-    terminals = set()
     all_rhs_symbols_with_tokens = {}
     for lhs, rules_for_lhs in productions.items():
         for rhs_list, rule_token_for_this_rhs in rules_for_lhs:
@@ -103,16 +126,17 @@ def extract_grammar_from_tree(gdl_root_node):
                 if sym_str not in non_terminals: terminals.add(sym_str)
     terminals.add(EOF_TOKEN_TYPE)
 
+    # Проверка: нетерминалы, которые используются, но не определены в левой части правил
+    for sym_in_rhs, first_occurrence_token in all_rhs_symbols_with_tokens.items():
+        if sym_in_rhs not in non_terminals and sym_in_rhs not in terminals:
+            raise GrammarError(f"Symbol '{sym_in_rhs}' in RHS is not recognized as terminal or non-terminal.", first_occurrence_token)
+
+    # Проверка: нетерминалы, определенные но без правил
     for nt_name in non_terminals:
         if nt_name not in productions:
             is_axiom_of_empty_lang = (nt_name == extracted_axiom and not any(productions.values())) # Check if NO rules exist at all
-            if not is_axiom_of_empty_lang and nt_name != extracted_axiom : # If it's not axiom of a truly empty grammar
+            if not is_axiom_of_empty_lang: # If it's not axiom of a truly empty grammar
                  raise GrammarError(f"Non-terminal '{nt_name}' is declared but has no production rules.", token_map.get(nt_name))
-    
-    for sym_in_rhs, first_occurrence_token in all_rhs_symbols_with_tokens.items():
-        if sym_in_rhs != EPSILON and sym_in_rhs != EOF_TOKEN_TYPE and \
-           sym_in_rhs not in non_terminals and sym_in_rhs not in terminals:
-            raise GrammarError(f"Symbol '{sym_in_rhs}' in RHS is not recognized.", first_occurrence_token)
 
     return {'axiom': extracted_axiom, 'productions': productions, 'non_terminals': non_terminals, 'terminals': terminals, 'token_map': token_map}
 
