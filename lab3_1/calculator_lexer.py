@@ -1,4 +1,3 @@
-# calculator_lexer.py
 import re
 from common import Token, ParseError, EOF_TOKEN_TYPE
 

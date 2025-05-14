@@ -1,18 +1,14 @@
-# generic_ll1_parser.py
-from common import Node, Token, ParseError, EPSILON, EOF_TOKEN_TYPE # Импортируем необходимые сущности
+from common import Node, Token, ParseError, EPSILON, EOF_TOKEN_TYPE 
 
 class GenericLL1Parser:
     def __init__(self, lexer_func, parse_table_module):
-        self.lexer_func = lexer_func # Функция лексического анализатора
+        self.lexer_func = lexer_func
         
         # Загружаем информацию о грамматике из модуля таблицы
         self.parse_table = parse_table_module.parse_table
         self.axiom = parse_table_module.GRAMMAR_AXIOM
         self.terminals = parse_table_module.GRAMMAR_TERMINALS
         self.non_terminals = parse_table_module.GRAMMAR_NON_TERMINALS
-        
-        # Используем константы EPSILON и EOF_TOKEN_TYPE из загруженного модуля,
-        # чтобы быть консистентными с тем, как они были сохранены генератором таблиц
         self.EPSILON = parse_table_module.EPSILON
         self.EOF_TOKEN_TYPE = parse_table_module.EOF_TOKEN_TYPE
         
@@ -45,15 +41,7 @@ class GenericLL1Parser:
 
         self.tree_root = Node(self.axiom) # Корень дерева разбора - аксиома
         # Стек: (символ_на_обработку, узел_родитель_в_дереве_для_этого_символа)
-        # Первый элемент на обработку - аксиома. Ее родитель в дереве - None (она сама корень).
-        # Но узел для аксиомы уже создан (self.tree_root), поэтому ее "дети" будут добавляться к нему.
-        # В стек кладем аксиому, ее "результат" (узел) - это self.tree_root.
-        # А символы ее правой части будут иметь self.tree_root в качестве родителя.
-        # Изначальный стек для парсера: (EOF, None), (АКСИОМА, None_или_узел_для_АКСИОМЫ_если_он_уже_есть)
         self.parsing_stack = [(self.EOF_TOKEN_TYPE, self.tree_root), (self.axiom, self.tree_root)]
-        # Важно: parent_for_tree_node_children для аксиомы должен быть self.tree_root,
-        # чтобы ее дети (символы из первой продукции) добавлялись к нему.
-        # Когда мы извлекаем ('AXIOM', self.tree_root), current_tree_node становится self.tree_root.
 
         while self.parsing_stack:
             stack_top_symbol, parent_for_new_nodes = self.parsing_stack.pop()
@@ -72,7 +60,7 @@ class GenericLL1Parser:
             current_processed_node = None # Узел в дереве, соответствующий stack_top_symbol
 
             if stack_top_symbol in self.terminals: # Это терминал языка, который парсим
-                if stack_top_symbol == self.current_token.type: # Сравниваем по ТИПУ токена
+                if stack_top_symbol == self.current_token.type: # Сравниваем по типу токена
                     current_processed_node = Node(self.current_token.type, token=self.current_token)
                     if parent_for_new_nodes:
                         parent_for_new_nodes.add_child(current_processed_node)

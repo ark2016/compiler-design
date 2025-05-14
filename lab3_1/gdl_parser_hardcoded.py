@@ -1,4 +1,3 @@
-# gdl_parser_hardcoded.py
 from common import Node, Token, ParseError, EPSILON, EOF_TOKEN_TYPE
 
 class GDLHardcodedParser:
@@ -34,11 +33,8 @@ class GDLHardcodedParser:
 
     def parse(self):
         Node._ids = 0 
-        self.root_node = Node("PROG") # Аксиома GDL грамматики (согласно `otchet.md`)
+        self.root_node = Node("PROG") # Аксиома GDL грамматики
         # Стек: (символ_для_обработки, узел_родитель_в_дереве)
-        # EOF_TOKEN_TYPE должен быть тот же, что генерирует gdl_lexer (т.е. "EOF")
-        # Вместо None для родителя PROG, передаем self.root_node, но он будет заменен.
-        # Лучше так: ('PROG', None) и current_node = self.root_node для PROG.
         self.parsing_stack = [(EOF_TOKEN_TYPE, self.root_node), ('PROG', None)] 
 
         while self.parsing_stack:
@@ -70,9 +66,7 @@ class GDLHardcodedParser:
 
             lookahead_gdl_token_type = self.current_token.type
             
-            # LL(1) разбор для GDL (согласно otchet.md)
-            # Важно: символы правой части добавляются в стек в ОБРАТНОМ порядке
-            
+            # LL(1) разбор для GDL             
             if top_symbol == 'PROG': # PROG ::= AXIOM GRAMMAR EOF
                  if lookahead_gdl_token_type == 'LBRACK': 
                      rhs = [('AXIOM', current_gdl_nt_node), ('GRAMMAR', current_gdl_nt_node), (EOF_TOKEN_TYPE, current_gdl_nt_node)]

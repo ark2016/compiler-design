@@ -1,11 +1,10 @@
-# calculator.py
 import sys
 import argparse
-import importlib.util # Для динамического импорта модуля таблицы
-from common import generate_dot, ParseError, GrammarError # Исключения для try-except
+import importlib.util 
+from common import generate_dot, ParseError, GrammarError 
 from calculator_lexer import lex_calculator_tokens
 from generic_ll1_parser import GenericLL1Parser
-from calculator_evaluator import evaluate_expression_tree # Опционально
+from calculator_evaluator import evaluate_expression_tree 
 
 def main_calculator():
     parser = argparse.ArgumentParser(description="Calculator using a generated LL(1) parse table.")

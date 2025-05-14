@@ -1,13 +1,9 @@
-# bootstrapper.py
 import sys
 import argparse
-import importlib.util # Для динамического импорта таблицы GDL
-from common import generate_dot, ParseError, GrammarError # Для обработки ошибок и DOT
-# lex_gdl_tokens нужен для лексического анализа GDL файла пользователя
+import importlib.util
+from common import generate_dot, ParseError, GrammarError 
 from gdl_lexer import lex_gdl_tokens 
-# GenericLL1Parser нужен для парсинга GDL файла пользователя по таблице GDL
-from generic_ll1_parser import GenericLL1Parser 
-# Функции анализа нужны для обработки AST GDL файла пользователя и построения таблицы для ЕГО грамматики
+from generic_ll1_parser import GenericLL1Parser
 from grammar_analyzer import (
     extract_grammar_from_tree,
     compute_first_sets,

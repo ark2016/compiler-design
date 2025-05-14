@@ -1,4 +1,3 @@
-# common.py
 from collections import namedtuple
 
 EPSILON = "ε"

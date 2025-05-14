@@ -1,8 +1,7 @@
-# gdl_lexer.py
 import re
-from common import Token, ParseError, EOF_TOKEN_TYPE # Убедитесь, что EOF_TOKEN_TYPE импортирован, если он используется в конце
+from common import Token, ParseError, EOF_TOKEN_TYPE
 
-def lex_gdl_tokens(text_content): # Имя функции совпадает
+def lex_gdl_tokens(text_content): 
     keywords = {'axiom', 'n'}
     token_specification = [
         ('COMMENT',   r'%[^\n]*(\n|\Z)'),
@@ -64,8 +63,6 @@ def lex_gdl_tokens(text_content): # Имя функции совпадает
             start_search_for_eof_newlines = 0
             if hasattr(last_tok, 'value') and last_tok.value: # Убедимся что value есть и не пустое
                 # Пытаемся найти индекс конца последнего токена в исходном тексте
-                # Это может быть нетривиально из-за line_start_offset и пропущенных символов
-                # Упрощенный подход: ищем с конца строки последнего токена
                 approx_last_tok_end_offset = line_start_offset + last_tok.col + len(last_tok.value) -1
                 if approx_last_tok_end_offset < text_len:
                      remaining_text = text_content[approx_last_tok_end_offset:]

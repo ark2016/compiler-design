@@ -1,7 +1,3 @@
-# calculator_evaluator.py
-# Этот модуль опционален и демонстрирует, как можно обойти дерево для вычисления.
-# Для лабораторной он не строго обязателен, если требуется только построение дерева.
-
 from common import EPSILON
 
 def evaluate_expression_tree(node):
@@ -70,7 +66,7 @@ def evaluate_expression_tree(node):
 def _evaluate_e_prime(left_operand_val, e_prime_node):
     # E' -> + T E' | ε
     if not e_prime_node.children or e_prime_node.children[0].symbol == EPSILON:
-        return left_operand_val # ε продукция
+        return left_operand_val # ε правило
 
     # E' -> + T E'
     # Дети: '+', T, E'
@@ -87,7 +83,7 @@ def _evaluate_e_prime(left_operand_val, e_prime_node):
 def _evaluate_t_prime(left_operand_val, t_prime_node):
     # T' -> * F T' | ε
     if not t_prime_node.children or t_prime_node.children[0].symbol == EPSILON:
-        return left_operand_val # ε продукция
+        return left_operand_val # ε правило
 
     # T' -> * F T'
     # Дети: '*', F, T'

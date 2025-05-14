@@ -1,8 +1,7 @@
-# compiler_generator.py
 import sys
 import argparse
-from common import generate_dot, ParseError, GrammarError, EOF_TOKEN_TYPE # EOF_TOKEN_TYPE для gdl_parser_hardcoded
-from gdl_lexer import lex_gdl_tokens # <--- Убедитесь, что этот импорт есть и gdl_lexer.py существует
+from common import generate_dot, ParseError, GrammarError, EOF_TOKEN_TYPE #
+from gdl_lexer import lex_gdl_tokens
 from gdl_parser_hardcoded import GDLHardcodedParser
 from grammar_analyzer import (
     extract_grammar_from_tree,
@@ -28,7 +27,7 @@ def main():
             gdl_text_content = f.read()
 
         print("Lexing GDL input...")
-        gdl_tokens_iter = lex_gdl_tokens(gdl_text_content) # <--- Использование импортированной функции
+        gdl_tokens_iter = lex_gdl_tokens(gdl_text_content)
         
         print("Parsing GDL input (with GDLHardcodedParser)...")
         gdl_parser = GDLHardcodedParser(gdl_tokens_iter)

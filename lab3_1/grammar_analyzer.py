@@ -1,18 +1,7 @@
-# grammar_analyzer.py
 import pprint
 from common import EPSILON, EOF_TOKEN_TYPE, GrammarError, Token 
 
-# Функции extract_grammar_from_tree, compute_first_sets, 
-# compute_follow_sets, build_ll1_table 
-# КОПИРУЮТСЯ СЮДА ИЗ ПРЕДЫДУЩЕГО ОТВЕТА (из compiler_generator.py)
-# Убедитесь, что они используют GrammarError и Token из common.py
-
-# --- Начало копии функций анализа ---
 def extract_grammar_from_tree(gdl_root_node):
-    # ... (код из предыдущего compiler_generator.py) ...
-    # Убедитесь, что EOF_TOKEN_TYPE используется корректно
-    # и что имена нетерминалов GDL (AXIOM, GRAMMAR и т.д.)
-    # совпадают с теми, что строит gdl_parser_hardcoded.py
     extracted_axiom = None
     productions = {}
     non_terminals = set()
@@ -128,7 +117,6 @@ def extract_grammar_from_tree(gdl_root_node):
     return {'axiom': extracted_axiom, 'productions': productions, 'non_terminals': non_terminals, 'terminals': terminals, 'token_map': token_map}
 
 def compute_first_sets(productions, non_terminals, terminals, token_map):
-    # ... (код из предыдущего compiler_generator.py) ...
     first = {s: set() for s in list(non_terminals) + list(terminals)}
     for t in terminals: first[t] = {t}
     changed = True
@@ -156,7 +144,6 @@ def compute_first_sets(productions, non_terminals, terminals, token_map):
     return first
 
 def compute_follow_sets(productions, non_terminals, terminals, axiom, first_sets, token_map):
-    # ... (код из предыдущего compiler_generator.py) ...
     follow = {nt: set() for nt in non_terminals}
     if axiom and axiom in follow: follow[axiom].add(EOF_TOKEN_TYPE)
     elif axiom and axiom not in follow: raise GrammarError(f"Axiom '{axiom}' not in NTs for FOLLOW.", token_map.get(axiom))
@@ -189,8 +176,6 @@ def compute_follow_sets(productions, non_terminals, terminals, axiom, first_sets
     return follow
 
 def build_ll1_table(grammar_data, first_sets, follow_sets):
-    # ... (код из предыдущего compiler_generator.py) ...
-    # Убедитесь, что используется grammar_data['token_map'] для ошибок
     productions = grammar_data['productions']; non_terminals = grammar_data['non_terminals']
     terminals = grammar_data['terminals']; token_map = grammar_data['token_map']
     ll1_table = {nt: {} for nt in non_terminals}
@@ -229,8 +214,6 @@ def build_ll1_table(grammar_data, first_sets, follow_sets):
     return ll1_table
 
 def format_table_as_python_code(table, axiom_name, grammar_terminals, grammar_non_terminals):
-    # ... (код из предыдущего compiler_generator.py) ...
-    # Добавлено sort_dicts=True для pprint для консистентного вывода
     code = f"# Generated Parse Table and Grammar Info\n"
     code += f"EPSILON = \"{EPSILON}\"\n"
     code += f"EOF_TOKEN_TYPE = \"{EOF_TOKEN_TYPE}\"\n" # Используем константу из common
@@ -239,4 +222,3 @@ def format_table_as_python_code(table, axiom_name, grammar_terminals, grammar_no
     code += f"GRAMMAR_NON_TERMINALS = {pprint.pformat(set(grammar_non_terminals), sort_dicts=False)}\n"
     code += "parse_table = " + pprint.pformat(table, indent=4, width=120, sort_dicts=True)
     return code
-# --- Конец копии функций анализа ---
