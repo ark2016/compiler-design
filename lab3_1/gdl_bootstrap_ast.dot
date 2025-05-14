@@ -1,0 +1,600 @@
+digraph {
+  rankdir=TB;
+  node [shape=ellipse];
+  n0 [label="PROG"];
+  n1 [label="AXIOM"];
+  n2 [label="GRAMMAR"];
+  n3 [label="EOF"];
+  n4 [label="["];
+  n5 [label="axiom"];
+  n6 [label="["];
+  n7 [label="PROG"];
+  n8 [label="]"];
+  n9 [label="]"];
+  n10 [label="RULE_DEFINITION"];
+  n11 [label="GRAMMAR"];
+  n12 [label="["];
+  n13 [label="PROG"];
+  n14 [label="RULE_BODIES"];
+  n15 [label="]"];
+  n16 [label="RULE_DEFINITION"];
+  n17 [label="GRAMMAR"];
+  n18 [label="RULE_BODY"];
+  n19 [label="RULE_BODIES_TAIL"];
+  n20 [label="["];
+  n21 [label="AXIOM"];
+  n22 [label="RULE_BODIES"];
+  n23 [label="]"];
+  n24 [label="RULE_DEFINITION"];
+  n25 [label="GRAMMAR"];
+  n26 [label="["];
+  n27 [label="RHS_SYMBOLS"];
+  n28 [label="]"];
+  n29 [label="ε"];
+  n30 [label="RULE_BODY"];
+  n31 [label="RULE_BODIES_TAIL"];
+  n32 [label="["];
+  n33 [label="GRAMMAR"];
+  n34 [label="RULE_BODIES"];
+  n35 [label="]"];
+  n36 [label="RULE_DEFINITION"];
+  n37 [label="GRAMMAR"];
+  n38 [label="SYMBOL"];
+  n39 [label="RHS_SYMBOLS"];
+  n40 [label="["];
+  n41 [label="RHS_SYMBOLS"];
+  n42 [label="]"];
+  n43 [label="ε"];
+  n44 [label="RULE_BODY"];
+  n45 [label="RULE_BODIES_TAIL"];
+  n46 [label="["];
+  n47 [label="RULE_DEFINITION"];
+  n48 [label="RULE_BODIES"];
+  n49 [label="]"];
+  n50 [label="RULE_DEFINITION"];
+  n51 [label="GRAMMAR"];
+  n52 [label="AXIOM"];
+  n53 [label="SYMBOL"];
+  n54 [label="RHS_SYMBOLS"];
+  n55 [label="SYMBOL"];
+  n56 [label="RHS_SYMBOLS"];
+  n57 [label="["];
+  n58 [label="RHS_SYMBOLS"];
+  n59 [label="]"];
+  n60 [label="RULE_BODY"];
+  n61 [label="RULE_BODIES_TAIL"];
+  n62 [label="RULE_BODY"];
+  n63 [label="RULE_BODIES_TAIL"];
+  n64 [label="["];
+  n65 [label="RULE_BODIES"];
+  n66 [label="RULE_BODIES"];
+  n67 [label="]"];
+  n68 [label="RULE_DEFINITION"];
+  n69 [label="GRAMMAR"];
+  n70 [label="GRAMMAR"];
+  n71 [label="SYMBOL"];
+  n72 [label="RHS_SYMBOLS"];
+  n73 [label="LBRACK"];
+  n74 [label="SYMBOL"];
+  n75 [label="RHS_SYMBOLS"];
+  n76 [label="SYMBOL"];
+  n77 [label="RHS_SYMBOLS"];
+  n78 [label="["];
+  n79 [label="RHS_SYMBOLS"];
+  n80 [label="]"];
+  n81 [label="ε"];
+  n82 [label="["];
+  n83 [label="RHS_SYMBOLS"];
+  n84 [label="]"];
+  n85 [label="ε"];
+  n86 [label="RULE_BODY"];
+  n87 [label="RULE_BODIES_TAIL"];
+  n88 [label="["];
+  n89 [label="RULE_BODIES_TAIL"];
+  n90 [label="RULE_BODIES"];
+  n91 [label="]"];
+  n92 [label="RULE_DEFINITION"];
+  n93 [label="GRAMMAR"];
+  n94 [label="EOF"];
+  n95 [label="ε"];
+  n96 [label="KW_AXIOM"];
+  n97 [label="SYMBOL"];
+  n98 [label="RHS_SYMBOLS"];
+  n99 [label="RULE_DEFINITION"];
+  n100 [label="SYMBOL"];
+  n101 [label="RHS_SYMBOLS"];
+  n102 [label="ε"];
+  n103 [label="SYMBOL"];
+  n104 [label="RHS_SYMBOLS"];
+  n105 [label="["];
+  n106 [label="RHS_SYMBOLS"];
+  n107 [label="]"];
+  n108 [label="ε"];
+  n109 [label="RULE_BODY"];
+  n110 [label="RULE_BODIES_TAIL"];
+  n111 [label="["];
+  n112 [label="RULE_BODY"];
+  n113 [label="RULE_BODIES"];
+  n114 [label="]"];
+  n115 [label="RULE_DEFINITION"];
+  n116 [label="GRAMMAR"];
+  n117 [label="LBRACK"];
+  n118 [label="SYMBOL"];
+  n119 [label="RHS_SYMBOLS"];
+  n120 [label="GRAMMAR"];
+  n121 [label="ε"];
+  n122 [label="LBRACK"];
+  n123 [label="SYMBOL"];
+  n124 [label="RHS_SYMBOLS"];
+  n125 [label="SYMBOL"];
+  n126 [label="RHS_SYMBOLS"];
+  n127 [label="["];
+  n128 [label="RHS_SYMBOLS"];
+  n129 [label="]"];
+  n130 [label="RULE_BODY"];
+  n131 [label="RULE_BODIES_TAIL"];
+  n132 [label="RULE_BODY"];
+  n133 [label="RULE_BODIES_TAIL"];
+  n134 [label="["];
+  n135 [label="RHS_SYMBOLS"];
+  n136 [label="RULE_BODIES"];
+  n137 [label="]"];
+  n138 [label="RULE_DEFINITION"];
+  n139 [label="GRAMMAR"];
+  n140 [label="IDENT"];
+  n141 [label="SYMBOL"];
+  n142 [label="RHS_SYMBOLS"];
+  n143 [label="IDENT"];
+  n144 [label="SYMBOL"];
+  n145 [label="RHS_SYMBOLS"];
+  n146 [label="RULE_BODY"];
+  n147 [label="SYMBOL"];
+  n148 [label="RHS_SYMBOLS"];
+  n149 [label="SYMBOL"];
+  n150 [label="RHS_SYMBOLS"];
+  n151 [label="["];
+  n152 [label="RHS_SYMBOLS"];
+  n153 [label="]"];
+  n154 [label="ε"];
+  n155 [label="["];
+  n156 [label="RHS_SYMBOLS"];
+  n157 [label="]"];
+  n158 [label="ε"];
+  n159 [label="RULE_BODY"];
+  n160 [label="RULE_BODIES_TAIL"];
+  n161 [label="["];
+  n162 [label="SYMBOL"];
+  n163 [label="RULE_BODIES"];
+  n164 [label="]"];
+  n165 [label="ε"];
+  n166 [label="RBRACK"];
+  n167 [label="SYMBOL"];
+  n168 [label="RHS_SYMBOLS"];
+  n169 [label="RULE_BODIES"];
+  n170 [label="SYMBOL"];
+  n171 [label="RHS_SYMBOLS"];
+  n172 [label="RULE_BODIES_TAIL"];
+  n173 [label="ε"];
+  n174 [label="RULE_BODY"];
+  n175 [label="SYMBOL"];
+  n176 [label="RHS_SYMBOLS"];
+  n177 [label="ε"];
+  n178 [label="SYMBOL"];
+  n179 [label="RHS_SYMBOLS"];
+  n180 [label="["];
+  n181 [label="RHS_SYMBOLS"];
+  n182 [label="]"];
+  n183 [label="RULE_BODY"];
+  n184 [label="RULE_BODIES_TAIL"];
+  n185 [label="RULE_BODY"];
+  n186 [label="RULE_BODIES_TAIL"];
+  n187 [label="RBRACK"];
+  n188 [label="ε"];
+  n189 [label="RBRACK"];
+  n190 [label="ε"];
+  n191 [label="RULE_BODIES_TAIL"];
+  n192 [label="ε"];
+  n193 [label="LBRACK"];
+  n194 [label="SYMBOL"];
+  n195 [label="RHS_SYMBOLS"];
+  n196 [label="SYMBOL"];
+  n197 [label="RHS_SYMBOLS"];
+  n198 [label="["];
+  n199 [label="RHS_SYMBOLS"];
+  n200 [label="]"];
+  n201 [label="ε"];
+  n202 [label="["];
+  n203 [label="RHS_SYMBOLS"];
+  n204 [label="]"];
+  n205 [label="RULE_BODY"];
+  n206 [label="RULE_BODIES_TAIL"];
+  n207 [label="RHS_SYMBOLS"];
+  n208 [label="SYMBOL"];
+  n209 [label="RHS_SYMBOLS"];
+  n210 [label="SYMBOL"];
+  n211 [label="SYMBOL"];
+  n212 [label="RHS_SYMBOLS"];
+  n213 [label="ε"];
+  n214 [label="SYMBOL"];
+  n215 [label="RHS_SYMBOLS"];
+  n216 [label="["];
+  n217 [label="RHS_SYMBOLS"];
+  n218 [label="]"];
+  n219 [label="RULE_BODY"];
+  n220 [label="RULE_BODIES_TAIL"];
+  n221 [label="RBRACK"];
+  n222 [label="ε"];
+  n223 [label="RHS_SYMBOLS"];
+  n224 [label="ε"];
+  n225 [label="IDENT"];
+  n226 [label="ε"];
+  n227 [label="SYMBOL"];
+  n228 [label="RHS_SYMBOLS"];
+  n229 [label="["];
+  n230 [label="RHS_SYMBOLS"];
+  n231 [label="]"];
+  n232 [label="RULE_BODY"];
+  n233 [label="RULE_BODIES_TAIL"];
+  n234 [label="OP"];
+  n235 [label="ε"];
+  n236 [label="SYMBOL"];
+  n237 [label="RHS_SYMBOLS"];
+  n238 [label="["];
+  n239 [label="RHS_SYMBOLS"];
+  n240 [label="]"];
+  n241 [label="RULE_BODY"];
+  n242 [label="RULE_BODIES_TAIL"];
+  n243 [label="LPAREN"];
+  n244 [label="ε"];
+  n245 [label="SYMBOL"];
+  n246 [label="RHS_SYMBOLS"];
+  n247 [label="["];
+  n248 [label="RHS_SYMBOLS"];
+  n249 [label="]"];
+  n250 [label="ε"];
+  n251 [label="RPAREN"];
+  n252 [label="ε"];
+  n253 [label="SYMBOL"];
+  n254 [label="RHS_SYMBOLS"];
+  n255 [label="KW_N"];
+  n256 [label="ε"];
+
+  n0 -> n1;
+  n0 -> n2;
+  n0 -> n3;
+  n1 -> n4;
+  n1 -> n5;
+  n1 -> n6;
+  n1 -> n7;
+  n1 -> n8;
+  n1 -> n9;
+  n2 -> n10;
+  n2 -> n11;
+  n10 -> n12;
+  n10 -> n13;
+  n10 -> n14;
+  n10 -> n15;
+  n11 -> n16;
+  n11 -> n17;
+  n14 -> n18;
+  n14 -> n19;
+  n16 -> n20;
+  n16 -> n21;
+  n16 -> n22;
+  n16 -> n23;
+  n17 -> n24;
+  n17 -> n25;
+  n18 -> n26;
+  n18 -> n27;
+  n18 -> n28;
+  n19 -> n29;
+  n22 -> n30;
+  n22 -> n31;
+  n24 -> n32;
+  n24 -> n33;
+  n24 -> n34;
+  n24 -> n35;
+  n25 -> n36;
+  n25 -> n37;
+  n27 -> n38;
+  n27 -> n39;
+  n30 -> n40;
+  n30 -> n41;
+  n30 -> n42;
+  n31 -> n43;
+  n34 -> n44;
+  n34 -> n45;
+  n36 -> n46;
+  n36 -> n47;
+  n36 -> n48;
+  n36 -> n49;
+  n37 -> n50;
+  n37 -> n51;
+  n38 -> n52;
+  n39 -> n53;
+  n39 -> n54;
+  n41 -> n55;
+  n41 -> n56;
+  n44 -> n57;
+  n44 -> n58;
+  n44 -> n59;
+  n45 -> n60;
+  n45 -> n61;
+  n48 -> n62;
+  n48 -> n63;
+  n50 -> n64;
+  n50 -> n65;
+  n50 -> n66;
+  n50 -> n67;
+  n51 -> n68;
+  n51 -> n69;
+  n53 -> n70;
+  n54 -> n71;
+  n54 -> n72;
+  n55 -> n73;
+  n56 -> n74;
+  n56 -> n75;
+  n58 -> n76;
+  n58 -> n77;
+  n60 -> n78;
+  n60 -> n79;
+  n60 -> n80;
+  n61 -> n81;
+  n62 -> n82;
+  n62 -> n83;
+  n62 -> n84;
+  n63 -> n85;
+  n66 -> n86;
+  n66 -> n87;
+  n68 -> n88;
+  n68 -> n89;
+  n68 -> n90;
+  n68 -> n91;
+  n69 -> n92;
+  n69 -> n93;
+  n71 -> n94;
+  n72 -> n95;
+  n74 -> n96;
+  n75 -> n97;
+  n75 -> n98;
+  n76 -> n99;
+  n77 -> n100;
+  n77 -> n101;
+  n79 -> n102;
+  n83 -> n103;
+  n83 -> n104;
+  n86 -> n105;
+  n86 -> n106;
+  n86 -> n107;
+  n87 -> n108;
+  n90 -> n109;
+  n90 -> n110;
+  n92 -> n111;
+  n92 -> n112;
+  n92 -> n113;
+  n92 -> n114;
+  n93 -> n115;
+  n93 -> n116;
+  n97 -> n117;
+  n98 -> n118;
+  n98 -> n119;
+  n100 -> n120;
+  n101 -> n121;
+  n103 -> n122;
+  n104 -> n123;
+  n104 -> n124;
+  n106 -> n125;
+  n106 -> n126;
+  n109 -> n127;
+  n109 -> n128;
+  n109 -> n129;
+  n110 -> n130;
+  n110 -> n131;
+  n113 -> n132;
+  n113 -> n133;
+  n115 -> n134;
+  n115 -> n135;
+  n115 -> n136;
+  n115 -> n137;
+  n116 -> n138;
+  n116 -> n139;
+  n118 -> n140;
+  n119 -> n141;
+  n119 -> n142;
+  n123 -> n143;
+  n124 -> n144;
+  n124 -> n145;
+  n125 -> n146;
+  n126 -> n147;
+  n126 -> n148;
+  n128 -> n149;
+  n128 -> n150;
+  n130 -> n151;
+  n130 -> n152;
+  n130 -> n153;
+  n131 -> n154;
+  n132 -> n155;
+  n132 -> n156;
+  n132 -> n157;
+  n133 -> n158;
+  n136 -> n159;
+  n136 -> n160;
+  n138 -> n161;
+  n138 -> n162;
+  n138 -> n163;
+  n138 -> n164;
+  n139 -> n165;
+  n141 -> n166;
+  n142 -> n167;
+  n142 -> n168;
+  n144 -> n169;
+  n145 -> n170;
+  n145 -> n171;
+  n147 -> n172;
+  n148 -> n173;
+  n149 -> n174;
+  n150 -> n175;
+  n150 -> n176;
+  n152 -> n177;
+  n156 -> n178;
+  n156 -> n179;
+  n159 -> n180;
+  n159 -> n181;
+  n159 -> n182;
+  n160 -> n183;
+  n160 -> n184;
+  n163 -> n185;
+  n163 -> n186;
+  n167 -> n187;
+  n168 -> n188;
+  n170 -> n189;
+  n171 -> n190;
+  n175 -> n191;
+  n176 -> n192;
+  n178 -> n193;
+  n179 -> n194;
+  n179 -> n195;
+  n181 -> n196;
+  n181 -> n197;
+  n183 -> n198;
+  n183 -> n199;
+  n183 -> n200;
+  n184 -> n201;
+  n185 -> n202;
+  n185 -> n203;
+  n185 -> n204;
+  n186 -> n205;
+  n186 -> n206;
+  n194 -> n207;
+  n195 -> n208;
+  n195 -> n209;
+  n196 -> n210;
+  n197 -> n211;
+  n197 -> n212;
+  n199 -> n213;
+  n203 -> n214;
+  n203 -> n215;
+  n205 -> n216;
+  n205 -> n217;
+  n205 -> n218;
+  n206 -> n219;
+  n206 -> n220;
+  n208 -> n221;
+  n209 -> n222;
+  n211 -> n223;
+  n212 -> n224;
+  n214 -> n225;
+  n215 -> n226;
+  n217 -> n227;
+  n217 -> n228;
+  n219 -> n229;
+  n219 -> n230;
+  n219 -> n231;
+  n220 -> n232;
+  n220 -> n233;
+  n227 -> n234;
+  n228 -> n235;
+  n230 -> n236;
+  n230 -> n237;
+  n232 -> n238;
+  n232 -> n239;
+  n232 -> n240;
+  n233 -> n241;
+  n233 -> n242;
+  n236 -> n243;
+  n237 -> n244;
+  n239 -> n245;
+  n239 -> n246;
+  n241 -> n247;
+  n241 -> n248;
+  n241 -> n249;
+  n242 -> n250;
+  n245 -> n251;
+  n246 -> n252;
+  n248 -> n253;
+  n248 -> n254;
+  n253 -> n255;
+  n254 -> n256;
+
+  { rank=same; n1 -> n2 -> n3 [style=invis]; }
+  { rank=same; n4 -> n5 -> n6 -> n7 -> n8 -> n9 [style=invis]; }
+  { rank=same; n10 -> n11 [style=invis]; }
+  { rank=same; n12 -> n13 -> n14 -> n15 [style=invis]; }
+  { rank=same; n16 -> n17 [style=invis]; }
+  { rank=same; n18 -> n19 [style=invis]; }
+  { rank=same; n20 -> n21 -> n22 -> n23 [style=invis]; }
+  { rank=same; n24 -> n25 [style=invis]; }
+  { rank=same; n26 -> n27 -> n28 [style=invis]; }
+  { rank=same; n30 -> n31 [style=invis]; }
+  { rank=same; n32 -> n33 -> n34 -> n35 [style=invis]; }
+  { rank=same; n36 -> n37 [style=invis]; }
+  { rank=same; n38 -> n39 [style=invis]; }
+  { rank=same; n40 -> n41 -> n42 [style=invis]; }
+  { rank=same; n44 -> n45 [style=invis]; }
+  { rank=same; n46 -> n47 -> n48 -> n49 [style=invis]; }
+  { rank=same; n50 -> n51 [style=invis]; }
+  { rank=same; n53 -> n54 [style=invis]; }
+  { rank=same; n55 -> n56 [style=invis]; }
+  { rank=same; n57 -> n58 -> n59 [style=invis]; }
+  { rank=same; n60 -> n61 [style=invis]; }
+  { rank=same; n62 -> n63 [style=invis]; }
+  { rank=same; n64 -> n65 -> n66 -> n67 [style=invis]; }
+  { rank=same; n68 -> n69 [style=invis]; }
+  { rank=same; n71 -> n72 [style=invis]; }
+  { rank=same; n74 -> n75 [style=invis]; }
+  { rank=same; n76 -> n77 [style=invis]; }
+  { rank=same; n78 -> n79 -> n80 [style=invis]; }
+  { rank=same; n82 -> n83 -> n84 [style=invis]; }
+  { rank=same; n86 -> n87 [style=invis]; }
+  { rank=same; n88 -> n89 -> n90 -> n91 [style=invis]; }
+  { rank=same; n92 -> n93 [style=invis]; }
+  { rank=same; n97 -> n98 [style=invis]; }
+  { rank=same; n100 -> n101 [style=invis]; }
+  { rank=same; n103 -> n104 [style=invis]; }
+  { rank=same; n105 -> n106 -> n107 [style=invis]; }
+  { rank=same; n109 -> n110 [style=invis]; }
+  { rank=same; n111 -> n112 -> n113 -> n114 [style=invis]; }
+  { rank=same; n115 -> n116 [style=invis]; }
+  { rank=same; n118 -> n119 [style=invis]; }
+  { rank=same; n123 -> n124 [style=invis]; }
+  { rank=same; n125 -> n126 [style=invis]; }
+  { rank=same; n127 -> n128 -> n129 [style=invis]; }
+  { rank=same; n130 -> n131 [style=invis]; }
+  { rank=same; n132 -> n133 [style=invis]; }
+  { rank=same; n134 -> n135 -> n136 -> n137 [style=invis]; }
+  { rank=same; n138 -> n139 [style=invis]; }
+  { rank=same; n141 -> n142 [style=invis]; }
+  { rank=same; n144 -> n145 [style=invis]; }
+  { rank=same; n147 -> n148 [style=invis]; }
+  { rank=same; n149 -> n150 [style=invis]; }
+  { rank=same; n151 -> n152 -> n153 [style=invis]; }
+  { rank=same; n155 -> n156 -> n157 [style=invis]; }
+  { rank=same; n159 -> n160 [style=invis]; }
+  { rank=same; n161 -> n162 -> n163 -> n164 [style=invis]; }
+  { rank=same; n167 -> n168 [style=invis]; }
+  { rank=same; n170 -> n171 [style=invis]; }
+  { rank=same; n175 -> n176 [style=invis]; }
+  { rank=same; n178 -> n179 [style=invis]; }
+  { rank=same; n180 -> n181 -> n182 [style=invis]; }
+  { rank=same; n183 -> n184 [style=invis]; }
+  { rank=same; n185 -> n186 [style=invis]; }
+  { rank=same; n194 -> n195 [style=invis]; }
+  { rank=same; n196 -> n197 [style=invis]; }
+  { rank=same; n198 -> n199 -> n200 [style=invis]; }
+  { rank=same; n202 -> n203 -> n204 [style=invis]; }
+  { rank=same; n205 -> n206 [style=invis]; }
+  { rank=same; n208 -> n209 [style=invis]; }
+  { rank=same; n211 -> n212 [style=invis]; }
+  { rank=same; n214 -> n215 [style=invis]; }
+  { rank=same; n216 -> n217 -> n218 [style=invis]; }
+  { rank=same; n219 -> n220 [style=invis]; }
+  { rank=same; n227 -> n228 [style=invis]; }
+  { rank=same; n229 -> n230 -> n231 [style=invis]; }
+  { rank=same; n232 -> n233 [style=invis]; }
+  { rank=same; n236 -> n237 [style=invis]; }
+  { rank=same; n238 -> n239 -> n240 [style=invis]; }
+  { rank=same; n241 -> n242 [style=invis]; }
+  { rank=same; n245 -> n246 [style=invis]; }
+  { rank=same; n247 -> n248 -> n249 [style=invis]; }
+  { rank=same; n253 -> n254 [style=invis]; }
+}

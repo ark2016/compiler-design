@@ -1,0 +1,29 @@
+% gdl_grammar_for_bootstrap.gdl
+% Окончательная версия, соответствующая парсеру GDLHardcodedParser
+
+[axiom [PROG]]
+
+[PROG           [AXIOM GRAMMAR EOF]] % RHS для PROG: AXIOM, GRAMMAR, EOF
+
+[AXIOM          [LBRACK KW_AXIOM LBRACK IDENT RBRACK RBRACK]] % RHS для AXIOM: последовательность терминалов
+
+[GRAMMAR        [RULE_DEFINITION GRAMMAR]  % Альтернатива 1 для GRAMMAR
+                 []]                       % Альтернатива 2 для GRAMMAR (ε)
+
+[RULE_DEFINITION [LBRACK IDENT RULE_BODIES RBRACK]] % RHS для RULE_DEFINITION
+
+[RULE_BODIES     [RULE_BODY RULE_BODIES_TAIL]]      % RHS для RULE_BODIES
+
+[RULE_BODIES_TAIL [RULE_BODY RULE_BODIES_TAIL]     % Альтернатива 1 для TAIL
+                   []]                           % Альтернатива 2 для TAIL (ε)
+
+[RULE_BODY       [LBRACK RHS_SYMBOLS RBRACK]]      % RHS для RULE_BODY
+
+[RHS_SYMBOLS     [SYMBOL RHS_SYMBOLS]             % Альтернатива 1 для RHS_SYMBOLS
+                   []]                           % Альтернатива 2 для RHS_SYMBOLS (ε)
+
+[SYMBOL          [IDENT]                          % Альтернатива 1 для SYMBOL
+                  [OP]                            % Альтернатива 2 для SYMBOL
+                  [LPAREN]                        % ...
+                  [RPAREN] 
+                  [KW_N]]

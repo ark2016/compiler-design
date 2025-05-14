@@ -1,0 +1,18 @@
+% calculator_grammar.gdl
+
+% Аксиома для калькулятора
+[axiom [E]]
+
+% Правила грамматики калькулятора
+[E    [T E_prime]]
+
+[E_prime   [+ T E_prime] 
+           []]  % Эпсилон-продукция E' -> epsilon
+
+[T    [F T_prime]]
+
+[T_prime   [* F T_prime] 
+           []]  % Эпсилон-продукция T' -> epsilon
+
+[F    [n] 
+      [( E )]]

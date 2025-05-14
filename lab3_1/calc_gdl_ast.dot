@@ -1,0 +1,319 @@
+digraph {
+  rankdir=TB;
+  node [shape=ellipse];
+  n0 [label="PROG"];
+  n1 [label="AXIOM"];
+  n2 [label="GRAMMAR"];
+  n3 [label="EOF"];
+  n4 [label="["];
+  n5 [label="axiom"];
+  n6 [label="["];
+  n7 [label="E"];
+  n8 [label="]"];
+  n9 [label="]"];
+  n10 [label="RULE_DEFINITION"];
+  n11 [label="GRAMMAR"];
+  n12 [label="["];
+  n13 [label="E"];
+  n14 [label="RULE_BODIES"];
+  n15 [label="]"];
+  n16 [label="RULE_DEFINITION"];
+  n17 [label="GRAMMAR"];
+  n18 [label="RULE_BODY"];
+  n19 [label="RULE_BODIES_TAIL"];
+  n20 [label="["];
+  n21 [label="E_prime"];
+  n22 [label="RULE_BODIES"];
+  n23 [label="]"];
+  n24 [label="RULE_DEFINITION"];
+  n25 [label="GRAMMAR"];
+  n26 [label="["];
+  n27 [label="RHS_SYMBOLS"];
+  n28 [label="]"];
+  n29 [label="ε"];
+  n30 [label="RULE_BODY"];
+  n31 [label="RULE_BODIES_TAIL"];
+  n32 [label="["];
+  n33 [label="T"];
+  n34 [label="RULE_BODIES"];
+  n35 [label="]"];
+  n36 [label="RULE_DEFINITION"];
+  n37 [label="GRAMMAR"];
+  n38 [label="SYMBOL"];
+  n39 [label="RHS_SYMBOLS"];
+  n40 [label="["];
+  n41 [label="RHS_SYMBOLS"];
+  n42 [label="]"];
+  n43 [label="RULE_BODY"];
+  n44 [label="RULE_BODIES_TAIL"];
+  n45 [label="RULE_BODY"];
+  n46 [label="RULE_BODIES_TAIL"];
+  n47 [label="["];
+  n48 [label="T_prime"];
+  n49 [label="RULE_BODIES"];
+  n50 [label="]"];
+  n51 [label="RULE_DEFINITION"];
+  n52 [label="GRAMMAR"];
+  n53 [label="T"];
+  n54 [label="SYMBOL"];
+  n55 [label="RHS_SYMBOLS"];
+  n56 [label="SYMBOL"];
+  n57 [label="RHS_SYMBOLS"];
+  n58 [label="["];
+  n59 [label="RHS_SYMBOLS"];
+  n60 [label="]"];
+  n61 [label="ε"];
+  n62 [label="["];
+  n63 [label="RHS_SYMBOLS"];
+  n64 [label="]"];
+  n65 [label="ε"];
+  n66 [label="RULE_BODY"];
+  n67 [label="RULE_BODIES_TAIL"];
+  n68 [label="["];
+  n69 [label="F"];
+  n70 [label="RULE_BODIES"];
+  n71 [label="]"];
+  n72 [label="ε"];
+  n73 [label="E_prime"];
+  n74 [label="ε"];
+  n75 [label="+"];
+  n76 [label="SYMBOL"];
+  n77 [label="RHS_SYMBOLS"];
+  n78 [label="ε"];
+  n79 [label="SYMBOL"];
+  n80 [label="RHS_SYMBOLS"];
+  n81 [label="["];
+  n82 [label="RHS_SYMBOLS"];
+  n83 [label="]"];
+  n84 [label="RULE_BODY"];
+  n85 [label="RULE_BODIES_TAIL"];
+  n86 [label="RULE_BODY"];
+  n87 [label="RULE_BODIES_TAIL"];
+  n88 [label="T"];
+  n89 [label="SYMBOL"];
+  n90 [label="RHS_SYMBOLS"];
+  n91 [label="F"];
+  n92 [label="SYMBOL"];
+  n93 [label="RHS_SYMBOLS"];
+  n94 [label="SYMBOL"];
+  n95 [label="RHS_SYMBOLS"];
+  n96 [label="["];
+  n97 [label="RHS_SYMBOLS"];
+  n98 [label="]"];
+  n99 [label="ε"];
+  n100 [label="["];
+  n101 [label="RHS_SYMBOLS"];
+  n102 [label="]"];
+  n103 [label="RULE_BODY"];
+  n104 [label="RULE_BODIES_TAIL"];
+  n105 [label="E_prime"];
+  n106 [label="ε"];
+  n107 [label="T_prime"];
+  n108 [label="ε"];
+  n109 [label="*"];
+  n110 [label="SYMBOL"];
+  n111 [label="RHS_SYMBOLS"];
+  n112 [label="ε"];
+  n113 [label="SYMBOL"];
+  n114 [label="RHS_SYMBOLS"];
+  n115 [label="["];
+  n116 [label="RHS_SYMBOLS"];
+  n117 [label="]"];
+  n118 [label="ε"];
+  n119 [label="F"];
+  n120 [label="SYMBOL"];
+  n121 [label="RHS_SYMBOLS"];
+  n122 [label="n"];
+  n123 [label="ε"];
+  n124 [label="SYMBOL"];
+  n125 [label="RHS_SYMBOLS"];
+  n126 [label="T_prime"];
+  n127 [label="ε"];
+  n128 [label="("];
+  n129 [label="SYMBOL"];
+  n130 [label="RHS_SYMBOLS"];
+  n131 [label="E"];
+  n132 [label="SYMBOL"];
+  n133 [label="RHS_SYMBOLS"];
+  n134 [label=")"];
+  n135 [label="ε"];
+
+  n0 -> n1;
+  n0 -> n2;
+  n0 -> n3;
+  n1 -> n4;
+  n1 -> n5;
+  n1 -> n6;
+  n1 -> n7;
+  n1 -> n8;
+  n1 -> n9;
+  n2 -> n10;
+  n2 -> n11;
+  n10 -> n12;
+  n10 -> n13;
+  n10 -> n14;
+  n10 -> n15;
+  n11 -> n16;
+  n11 -> n17;
+  n14 -> n18;
+  n14 -> n19;
+  n16 -> n20;
+  n16 -> n21;
+  n16 -> n22;
+  n16 -> n23;
+  n17 -> n24;
+  n17 -> n25;
+  n18 -> n26;
+  n18 -> n27;
+  n18 -> n28;
+  n19 -> n29;
+  n22 -> n30;
+  n22 -> n31;
+  n24 -> n32;
+  n24 -> n33;
+  n24 -> n34;
+  n24 -> n35;
+  n25 -> n36;
+  n25 -> n37;
+  n27 -> n38;
+  n27 -> n39;
+  n30 -> n40;
+  n30 -> n41;
+  n30 -> n42;
+  n31 -> n43;
+  n31 -> n44;
+  n34 -> n45;
+  n34 -> n46;
+  n36 -> n47;
+  n36 -> n48;
+  n36 -> n49;
+  n36 -> n50;
+  n37 -> n51;
+  n37 -> n52;
+  n38 -> n53;
+  n39 -> n54;
+  n39 -> n55;
+  n41 -> n56;
+  n41 -> n57;
+  n43 -> n58;
+  n43 -> n59;
+  n43 -> n60;
+  n44 -> n61;
+  n45 -> n62;
+  n45 -> n63;
+  n45 -> n64;
+  n46 -> n65;
+  n49 -> n66;
+  n49 -> n67;
+  n51 -> n68;
+  n51 -> n69;
+  n51 -> n70;
+  n51 -> n71;
+  n52 -> n72;
+  n54 -> n73;
+  n55 -> n74;
+  n56 -> n75;
+  n57 -> n76;
+  n57 -> n77;
+  n59 -> n78;
+  n63 -> n79;
+  n63 -> n80;
+  n66 -> n81;
+  n66 -> n82;
+  n66 -> n83;
+  n67 -> n84;
+  n67 -> n85;
+  n70 -> n86;
+  n70 -> n87;
+  n76 -> n88;
+  n77 -> n89;
+  n77 -> n90;
+  n79 -> n91;
+  n80 -> n92;
+  n80 -> n93;
+  n82 -> n94;
+  n82 -> n95;
+  n84 -> n96;
+  n84 -> n97;
+  n84 -> n98;
+  n85 -> n99;
+  n86 -> n100;
+  n86 -> n101;
+  n86 -> n102;
+  n87 -> n103;
+  n87 -> n104;
+  n89 -> n105;
+  n90 -> n106;
+  n92 -> n107;
+  n93 -> n108;
+  n94 -> n109;
+  n95 -> n110;
+  n95 -> n111;
+  n97 -> n112;
+  n101 -> n113;
+  n101 -> n114;
+  n103 -> n115;
+  n103 -> n116;
+  n103 -> n117;
+  n104 -> n118;
+  n110 -> n119;
+  n111 -> n120;
+  n111 -> n121;
+  n113 -> n122;
+  n114 -> n123;
+  n116 -> n124;
+  n116 -> n125;
+  n120 -> n126;
+  n121 -> n127;
+  n124 -> n128;
+  n125 -> n129;
+  n125 -> n130;
+  n129 -> n131;
+  n130 -> n132;
+  n130 -> n133;
+  n132 -> n134;
+  n133 -> n135;
+
+  { rank=same; n1 -> n2 -> n3 [style=invis]; }
+  { rank=same; n4 -> n5 -> n6 -> n7 -> n8 -> n9 [style=invis]; }
+  { rank=same; n10 -> n11 [style=invis]; }
+  { rank=same; n12 -> n13 -> n14 -> n15 [style=invis]; }
+  { rank=same; n16 -> n17 [style=invis]; }
+  { rank=same; n18 -> n19 [style=invis]; }
+  { rank=same; n20 -> n21 -> n22 -> n23 [style=invis]; }
+  { rank=same; n24 -> n25 [style=invis]; }
+  { rank=same; n26 -> n27 -> n28 [style=invis]; }
+  { rank=same; n30 -> n31 [style=invis]; }
+  { rank=same; n32 -> n33 -> n34 -> n35 [style=invis]; }
+  { rank=same; n36 -> n37 [style=invis]; }
+  { rank=same; n38 -> n39 [style=invis]; }
+  { rank=same; n40 -> n41 -> n42 [style=invis]; }
+  { rank=same; n43 -> n44 [style=invis]; }
+  { rank=same; n45 -> n46 [style=invis]; }
+  { rank=same; n47 -> n48 -> n49 -> n50 [style=invis]; }
+  { rank=same; n51 -> n52 [style=invis]; }
+  { rank=same; n54 -> n55 [style=invis]; }
+  { rank=same; n56 -> n57 [style=invis]; }
+  { rank=same; n58 -> n59 -> n60 [style=invis]; }
+  { rank=same; n62 -> n63 -> n64 [style=invis]; }
+  { rank=same; n66 -> n67 [style=invis]; }
+  { rank=same; n68 -> n69 -> n70 -> n71 [style=invis]; }
+  { rank=same; n76 -> n77 [style=invis]; }
+  { rank=same; n79 -> n80 [style=invis]; }
+  { rank=same; n81 -> n82 -> n83 [style=invis]; }
+  { rank=same; n84 -> n85 [style=invis]; }
+  { rank=same; n86 -> n87 [style=invis]; }
+  { rank=same; n89 -> n90 [style=invis]; }
+  { rank=same; n92 -> n93 [style=invis]; }
+  { rank=same; n94 -> n95 [style=invis]; }
+  { rank=same; n96 -> n97 -> n98 [style=invis]; }
+  { rank=same; n100 -> n101 -> n102 [style=invis]; }
+  { rank=same; n103 -> n104 [style=invis]; }
+  { rank=same; n110 -> n111 [style=invis]; }
+  { rank=same; n113 -> n114 [style=invis]; }
+  { rank=same; n115 -> n116 -> n117 [style=invis]; }
+  { rank=same; n120 -> n121 [style=invis]; }
+  { rank=same; n124 -> n125 [style=invis]; }
+  { rank=same; n129 -> n130 [style=invis]; }
+  { rank=same; n132 -> n133 [style=invis]; }
+}
