@@ -10,46 +10,44 @@
 
 Проект состоит из нескольких модулей:
 
-*   `common.py`: Общие определения (токены, узлы AST, классы исключений) и утилиты (генерация DOT-представления дерева).
-*   `gdl_lexer.py`: Лексический анализатор для языка описания грамматик (GDL). Выделяет токены: `LBRACK`, `RBRACK`, `LPAREN`, `RPAREN`, `OP`, `IDENT`, `KW_AXIOM`, `KW_N`, `EOF`. Пропускает комментарии (`%`) и пробельные символы.
-*   `gdl_parser_hardcoded.py`: Предсказывающий синтаксический анализатор для GDL. Реализован с жестко закодированной логикой выбора продукций (без явной таблицы). Строит абстрактное синтаксическое дерево (AST) GDL-файла.
-*   `grammar_analyzer.py`: Модуль, содержащий логику анализа грамматики, извлеченной из AST GDL. Вычисляет множества FIRST и FOLLOW для данной грамматики и строит по ним LL(1) таблицу разбора. Также включает проверки на соответствие грамматики требованиям (наличие аксиомы, отсутствие LL(1) конфликтов и т.д.).
-*   `compiler_generator.py`: Основной скрипт **Этапа 1**. Читает GDL-файл, использует `gdl_lexer` и `gdl_parser_hardcoded` для его разбора, затем передает полученное AST в `grammar_analyzer` для построения LL(1) таблицы и сохраняет ее в виде Python-кода.
-*   `generic_ll1_parser.py`: Универсальный предсказывающий синтаксический анализатор, который работает на основе переданной ему LL(1) таблицы разбора. Может парсить любой язык, для которого предоставлена таблица и соответствующий лексер.
-*   `calculator_lexer.py`: Лексический анализатор для простого языка арифметических выражений (калькулятора). Выделяет токены: `+`, `*`, `(`, `)`, `n`, `EOF`.
-*   `calculator_evaluator.py`: (Опционально) Модуль для обхода дерева разбора арифметического выражения и его вычисления.
-*   `calculator.py`: Основной скрипт **Этапа 2**. Читает LL(1) таблицу разбора (сгенерированную `compiler_generator.py`), читает файл с арифметическим выражением, использует `calculator_lexer` и `generic_ll1_parser` для разбора выражения и (опционально) вычисляет результат.
-*   `bootstrapper.py`: Скрипт для демонстрации **Раскрутки**. Использует `gdl_lexer` и `generic_ll1_parser` (который работает по таблице для GDL, сгенерированной ранее) для разбора GDL-файла пользовательской грамматики, затем передает AST в `grammar_analyzer` для построения LL(1) таблицы для этой грамматики.
+*   [`common.py`](common.py): Общие определения (токены, узлы AST, классы исключений) и утилиты (генерация DOT-представления дерева).
+*   [`gdl_lexer.py`](gdl_lexer.py): Лексический анализатор для языка описания грамматик (GDL).
+*   [`gdl_parser_hardcoded.py`](gdl_parser_hardcoded.py): Предсказывающий синтаксический анализатор для GDL с жестко закодированной логикой. Используется для разбора GDL-файлов на **Этапе 1** и **Шаге 3** раскрутки (для генерации первой таблицы GDL).
+*   [`grammar_analyzer.py`](grammar_analyzer.py): Модуль, содержащий логику анализа грамматики (извлечение из AST, FIRST, FOLLOW, построение LL(1) таблицы).
+*   [`compiler_generator.py`](compiler_generator.py): Основной скрипт **Этапа 1**. Использует `gdl_lexer`, `gdl_parser_hardcoded`, `grammar_analyzer`.
+*   [`generic_ll1_parser.py`](generic_ll1_parser.py): Универсальный предсказывающий синтаксический анализатор, работающий на основе переданной ему LL(1) таблицы разбора. Используется в **Калькуляторе** (Этап 2) и **Bootstrapper'е** (Этап 4).
+*   [`calculator_lexer.py`](calculator_lexer.py): Лексический анализатор для языка калькулятора.
+*   [`calculator_evaluator.py`](calculator_evaluator.py): (Опционально) Модуль для вычисления значения выражения по его AST.
+*   [`calculator.py`](calculator.py): Основной скрипт **Этапа 2** (тестовая программа "Калькулятор"). Использует `calculator_lexer`, `generic_ll1_parser` и `calculator_evaluator`.
+*   [`bootstrapper.py`](bootstrapper.py): Скрипт для демонстрации **Раскрутки** (Этап 4). Использует `gdl_lexer`, `generic_ll1_parser` (с таблицей для GDL) и `grammar_analyzer`.
 
 **Файлы грамматик:**
 
-*   `calculator_grammar.gdl`: Описание грамматики простого калькулятора на языке GDL.
-*   `gdl_grammar_for_bootstrap.gdl`: Описание грамматики самого языка GDL на языке GDL.
+*   [`calculator_grammar.gdl`](calculator_grammar.gdl): Описание грамматики простого калькулятора на языке GDL.
+*   [`gdl_grammar_for_bootstrap.gdl`](gdl_grammar_for_bootstrap.gdl): Описание грамматики самого языка GDL на языке GDL.
 
 **Тестовый ввод:**
 
-*   `expression.txt`: Файл с примером арифметического выражения.
+*   [`expression.txt`](expression.txt): Файл с примером арифметического выражения.
 
 ## 3. Язык описания грамматик (GDL)
 
-Синтаксис GDL описан в отчете по ЛР 2.3. Кратко:
+Синтаксис GDL определен в `gdl_grammar_for_bootstrap.gdl` и реализован парсером `gdl_parser_hardcoded.py`. Кратко:
 - Правила заключены в `[...]`.
 - Аксиома: `[axiom [ИМЯ_АКСИОМЫ]]`.
-- Определение правил для нетерминала: `[ИМЯ_НЕТЕРМИНАЛА [Правило1] [Правило2] ...]`.
-- Правая часть правила: `[Символ1 Символ2 ...]`. Пустая правая часть: `[]` (обозначает ε).
-- Символы в правой части: `IDENT` (нетерминалы или терминалы), `OP`, `LPAREN`, `RPAREN`, `KW_N` ('n').
+- Определение правил для нетерминала: `[ИМЯ_НЕТЕРМИНАЛА [ПраваяЧасть1] [ПраваяЧасть2] ...]`.
+- Правая часть правила (`[ПраваяЧастьN]`) – это последовательность символов: `[Символ1 Символ2 ...]`. Пустая правая часть `[]` обозначает ε.
+- Символы: `IDENT` (нетерминалы или терминалы), `OP`, `LPAREN`, `RPAREN`, `KW_N` ('n'), `EOF`.
 - Комментарии: `%` до конца строки.
 
 ## 4. Ошибки грамматики
 
-Генератор компиляторов способен обнаруживать следующие ошибки в описании грамматики:
+Генератор компиляторов (`compiler_generator.py` и `bootstrapper.py`) способен обнаруживать следующие ошибки в описании грамматики с указанием примерных координат:
 
 *   Не указана аксиома грамматики.
-*   Наличие нетерминального символа, который определен (был LHS или аксиомой), но для него не присутствуют правила.
-*   Использование символа в правой части правила, который не определен как нетерминал и не является одним из известных терминалов (OP, LPAREN, RPAREN, KW_N, EOF).
-*   Грамматика не относится к классу LL(1) (обнаружение FIRST/FIRST и FIRST/FOLLOW конфликтов при построении таблицы).
-
-Все ошибки сопровождаются указанием примерных координат в исходном GDL-файле.
+*   Нетерминал определен (был LHS или аксиомой), но для него не присутствуют правила (кроме аксиомы для пустого языка).
+*   Использование символа в правой части правила, который не определен как нетерминал и не является одним из известных терминалов GDL.
+*   Грамматика не относится к классу LL(1) (обнаружение FIRST/FIRST и FIRST/FOLLOW конфликтов).
 
 ## 5. Запуск и тестирование
 
@@ -60,40 +58,26 @@
 ```bash
 # Создание таблицы разбора для грамматики калькулятора
 python compiler_generator.py calculator_grammar.gdl -o calc_table.py --dot_gdl_ast calc_gdl_ast.dot --show_first_follow
-
-# Просмотр AST GDL файла (опционально, требует Graphviz)
-dot -Tpng calc_gdl_ast.dot -o calc_gdl_ast.png
 ```
-*   `compiler_generator.py`: Использует свой встроенный парсер GDL для разбора `calculator_grammar.gdl`.
-*   Вывод: `calc_table.py` (таблица для калькулятора), `calc_gdl_ast.dot` (AST `calculator_grammar.gdl`).
+*   Вывод: `calc_table.py` (таблица для калькулятора), `calc_gdl_ast.dot` (AST `calculator_grammar.gdl` построенное `gdl_parser_hardcoded.py`).
 
 **5.2. Шаг 2: Тестирование калькулятора (Используя сгенерированную таблицу)**
 
 ```bash
-# Создание тестового файла с выражением (если его нет)
-# expression.txt
-# n + n * ( n + n )
-
-# Разбор и вычисление выражения с помощью сгенерированной таблицы
-python calculator.py calc_table.py expression.txt -o calc_expr_parsetree.dot
-
-# Просмотр дерева разбора выражения (опционально, требует Graphviz)
-dot -Tpng calc_expr_parsetree.dot -o calc_expr_parsetree.png
+# Разбор и вычисление выражения с помощью сгенерированной таблицы calc_table.py
+python calculator.py calc_table.py expression.txt -o calc_expr_parsetree.dot --eval
 ```
-*   `calculator.py`: Загружает `calc_table.py` и использует `generic_ll1_parser` для разбора `expression.txt`.
+*   Вывод: Результат вычисления в консоль, `calc_expr_parsetree.dot` (дерево разбора выражения).
 
 **5.3. Шаг 3: Генерация таблицы для грамматики самого GDL (Подготовка к раскрутке)**
 
-Эта команда использует `compiler_generator.py` для обработки `gdl_grammar_for_bootstrap.gdl` и создания таблицы разбора для языка GDL (`gdl_table.py`).
+Эта команда использует `compiler_generator.py` (с жестко закодированным парсером) для обработки `gdl_grammar_for_bootstrap.gdl` и создания таблицы разбора для языка GDL (`gdl_table.py`).
 
 ```bash
 # Создание таблицы разбора для грамматики GDL
 python compiler_generator.py gdl_grammar_for_bootstrap.gdl -o gdl_table.py --dot_gdl_ast gdl_bootstrap_ast.dot --show_first_follow
-
-# Просмотр AST GDL для самой GDL грамматики (опционально, требует Graphviz)
-dot -Tpng gdl_bootstrap_ast.dot -o gdl_bootstrap_ast.png
 ```
-*   Вывод: `gdl_table.py` (таблица для GDL), `gdl_bootstrap_ast.dot` (AST `gdl_grammar_for_bootstrap.gdl`).
+*   Вывод: `gdl_table.py` (таблица для GDL), `gdl_bootstrap_ast.dot` (AST `gdl_grammar_for_bootstrap.gdl` построенное `gdl_parser_hardcoded.py`).
 
 **5.4. Шаг 4: Раскрутка - Генерация таблицы калькулятора с помощью Bootstrapper**
 
@@ -102,11 +86,8 @@ dot -Tpng gdl_bootstrap_ast.dot -o gdl_bootstrap_ast.png
 ```bash
 # Генерация таблицы калькулятора с использованием bootstrapper'а и таблицы GDL
 python bootstrapper.py gdl_table.py calculator_grammar.gdl -o calc_table_bootstrapped.py --dot_user_gdl_ast calc_gdl_ast_boot.dot
-
-# Просмотр AST calculator_grammar.gdl, построенного табличным парсером GDL (опционально)
-dot -Tpng calc_gdl_ast_boot.dot -o calc_gdl_ast_boot.png
 ```
-*   Сравните `calc_table_bootstrapped.py` с `calc_table.py` из Шага 1. Они должны быть идентичны (или логически эквивалентны), что демонстрирует корректность сгенерированной таблицы GDL и универсального парсера.
+*   Вывод: `calc_table_bootstrapped.py` (таблица для калькулятора, сгенерированная `bootstrapper.py`), `calc_gdl_ast_boot.dot` (AST `calculator_grammar.gdl` построенное `generic_ll1_parser` по таблице GDL). Сравните `calc_table_bootstrapped.py` с `calc_table.py` – они должны быть идентичны.
 
 **5.5. Шаг 5 (Опционально): Полная самоприменимость**
 
@@ -116,10 +97,34 @@ dot -Tpng calc_gdl_ast_boot.dot -o calc_gdl_ast_boot.png
 # Генерация таблицы GDL с использованием bootstrapper'а и таблицы GDL же
 python bootstrapper.py gdl_table.py gdl_grammar_for_bootstrap.gdl -o gdl_table_fully_bootstrapped.py
 ```
-*   Сравните `gdl_table_fully_bootstrapped.py` с `gdl_table.py` из Шага 3. Они также должны быть идентичны.
+*   Вывод: `gdl_table_fully_bootstrapped.py`. Сравните с `gdl_table.py` – они должны быть идентичны.
 
-## 6. Зависимости
+## 6. Визуализация деревьев разбора (Graphviz)
+
+После генерации `.dot` файлов, их можно преобразовать в изображения (например, PNG) с помощью утилиты `dot` из пакета Graphviz:
+
+```bash
+dot -Tpng filename.dot -o filename.png
+```
+
+## 7. Зависимости
 
 *   Python 3.x
 *   Graphviz (для визуализации `.dot` файлов, опционально)
+
+## 8. Реализованные файлы
+
+*   [`common.py`](common.py)
+*   [`gdl_lexer.py`](gdl_lexer.py)
+*   [`gdl_parser_hardcoded.py`](gdl_parser_hardcoded.py)
+*   [`grammar_analyzer.py`](grammar_analyzer.py)
+*   [`compiler_generator.py`](compiler_generator.py)
+*   [`generic_ll1_parser.py`](generic_ll1_parser.py)
+*   [`calculator_lexer.py`](calculator_lexer.py)
+*   [`calculator_evaluator.py`](calculator_evaluator.py)
+*   [`calculator.py`](calculator.py)
+*   [`bootstrapper.py`](bootstrapper.py)
+*   [`calculator_grammar.gdl`](calculator_grammar.gdl)
+*   [`gdl_grammar_for_bootstrap.gdl`](gdl_grammar_for_bootstrap.gdl)
+*   [`expression.txt`](expression.txt)
 
