@@ -1,0 +1,29 @@
+int {Main} <- char[ ][ ] {args} =
+  int {i} := 0;
+  int {sum} := 0;
+  {len}               := {Length} <- {args};
+  {i} ~ {len} - 1 loop {i}
+    {sum} := {sum} + 1
+  .
+  return {sum}.
+
+bool {IsEven} <- int {num} = 
+  return {num} % 2 == 0.
+
+int {Factorial} <- int {n} = 
+  int {result} := 1;
+  int {i} := 1;
+  {i} ~ {n} loop {i} {result} := {result} * {i}.
+  return {result}.
+
+void {PrintMessage} <- char[ ] {msg} = 
+  {Print} <- {msg};
+  return.
+
+int {Calculate} <- int {a}, int {b}, int {op} = 
+  int {result} := 0;
+  {op} == 1 then {result} := {a} + {b}.
+  {op} == 2 then {result} := {a} - {b}.
+  {op} == 3 then {result} := {a} * {b}.
+  {op} == 4 then {result} := {a} / {b}.
+  return {result}. 
