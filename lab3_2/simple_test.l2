@@ -1,0 +1,3 @@
+int {Main} <- char[ ][ ] {args} =
+  int {i} := 0;
+  return 0. 
