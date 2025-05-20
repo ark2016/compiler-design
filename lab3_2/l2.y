@@ -27,7 +27,8 @@
 
 %code provides {
     // Используем L2STYPE и L2LTYPE, так как они генерируются bison с нашим префиксом
-    #define YY_DECL int l2lex(L2STYPE* yylvalp, L2LTYPE* yyllocp, void* yyscanner)
+    // Переименовываем параметры, чтобы соответствовать ожиданиям flex
+    #define YY_DECL int l2lex(L2STYPE* yylval_param, L2LTYPE* yylloc_param, void* yyscanner)
     
     extern int l2lex_init(void** scanner);
     extern int l2lex_destroy(void* scanner);
