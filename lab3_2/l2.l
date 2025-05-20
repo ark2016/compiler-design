@@ -50,7 +50,7 @@ IDENTIFIER  \{[^\}]*\}
 %%
 
 {WHITESPACE}+   { /* игнорировать пробелы */ }
-{NEWLINE}       { column = 1; line_len = 0; return NEWLINE; }
+{NEWLINE}       { column = 1; line_len = 0; /* Игнорировать переводы строк */ }
 
 "##".*          { /* однострочный комментарий */ TOKEN(COMMENT); }
 "#("            { /* начало многострочного комментария */ TOKEN(COMMENT); }

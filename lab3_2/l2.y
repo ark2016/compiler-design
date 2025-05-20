@@ -125,7 +125,7 @@
 %token <string> AND OR XOR NOT PLUS MINUS MUL DIV MOD POW EQUAL
 %token <string> SEMICOLON COMMA DOT LBRACKET RBRACKET LPAREN RPAREN
 %token <string> LT GT TILDE
-%token <string> NEWLINE UNKNOWN
+%token <string> UNKNOWN
 
 %type <string> program func_def func_header formal_params param
 %type <string> type_or_void type prim_type block stmt_list statement
