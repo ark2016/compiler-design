@@ -1,7 +1,7 @@
 int {Main} <- char[ ][ ] {args} =
   int {i} := 0;
   int {sum} := 0;
-  {len}               := {Length} <- {args};
+  {len} := {Length} <- {args};
   {i} ~ {len} - 1 loop {i}
     {sum} := {sum} + 1
   .
