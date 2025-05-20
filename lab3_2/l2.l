@@ -8,6 +8,10 @@
 #include <string.h>
 #include "l2.tab.h"
 
+/* Сопоставление типов для правильной работы с префиксом l2 */
+typedef L2STYPE YYSTYPE;
+typedef L2LTYPE YYLTYPE;
+
 /* Макрос для сохранения текущей лексемы в yylval */
 #define SAVE_TOKEN do { \
     yylval->string = strdup(yytext); \
