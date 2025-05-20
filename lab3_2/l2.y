@@ -93,8 +93,7 @@ program         : func_def                   { printf("%s\n", $1); }
 
 func_def        : func_header EQUAL block DOT {
                     char buffer[1024];
-                    // Выводим заголовок функции, знак равенства, блок и точку
-                    // Блок уже должен иметь правильные отступы
+                    // Выводим заголовок функции, знак равенства, затем блок с отступом и точку
                     snprintf(buffer, sizeof(buffer), "%s %s\n%s%s", $1, $2, $3, $4);
                     $$ = strdup(buffer);
                   }
@@ -159,13 +158,22 @@ prim_type       : INT {
                 ;
 
 block           : stmt_list {
-                    char buffer[2048];
-                    // Увеличиваем уровень отступа для блока
-                    formatter->indent_level++;
-                    char* indented = create_indented_string(formatter->indent_level, formatter->indent_size, $1);
-                    snprintf(buffer, sizeof(buffer), "%s", indented);
-                    free(indented);
-                    formatter->indent_level--;
+                    char buffer[4096] = "";
+                    char* stmt_list = strdup($1);
+                    char* line = strtok(stmt_list, "\n");
+                    
+                    // Применяем отступы к каждой строке блока
+                    while (line != NULL) {
+                        char* indented = create_indented_string(1, formatter->indent_size, line);
+                        if (strlen(buffer) > 0) {
+                            strcat(buffer, "\n");
+                        }
+                        strcat(buffer, indented);
+                        free(indented);
+                        line = strtok(NULL, "\n");
+                    }
+                    
+                    free(stmt_list);
                     $$ = strdup(buffer);
                   }
                 ;
@@ -176,10 +184,9 @@ stmt_list       : statement {
                 | stmt_list SEMICOLON statement {
                     char buffer[2048];
                     // Добавляем точку с запятой к предыдущему оператору
-                    // Затем делаем перенос строки и добавляем отступ перед следующим оператором
-                    char* indented = create_indented_string(formatter->indent_level, formatter->indent_size, $3);
-                    snprintf(buffer, sizeof(buffer), "%s%s\n%s", $1, $2, indented);
-                    free(indented);
+                    // Затем делаем перенос строки и сохраняем новый оператор
+                    // Отступы будут применены к каждому оператору в блоке на уровне block
+                    snprintf(buffer, sizeof(buffer), "%s%s\n%s", $1, $2, $3);
                     $$ = strdup(buffer);
                   }
                 ;
@@ -316,6 +323,7 @@ do_while_stmt   : LOOP block WHILE expr DOT {
                 ;
 
 return_stmt     : RETURN {
+                    // Применяем текущий уровень отступов
                     $$ = $1;
                   }
                 | RETURN expr {
