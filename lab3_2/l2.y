@@ -43,6 +43,19 @@
             putchar(' ');
         }
     }
+    
+    // Добавляем функцию для создания строки с отступами
+    char* create_indented_string(int level, int size, const char* str) {
+        char* result = malloc(strlen(str) + level * size + 1);
+        if (!result) return NULL;
+        
+        int i;
+        for (i = 0; i < level * size; i++) {
+            result[i] = ' ';
+        }
+        strcpy(result + i, str);
+        return result;
+    }
 }
 
 %parse-param {void* scanner}
@@ -80,6 +93,8 @@ program         : func_def                   { printf("%s\n", $1); }
 
 func_def        : func_header EQUAL block DOT {
                     char buffer[1024];
+                    // Выводим заголовок функции, знак равенства, блок и точку
+                    // Блок уже должен иметь правильные отступы
                     snprintf(buffer, sizeof(buffer), "%s %s\n%s%s", $1, $2, $3, $4);
                     $$ = strdup(buffer);
                   }
@@ -145,8 +160,12 @@ prim_type       : INT {
 
 block           : stmt_list {
                     char buffer[2048];
-                    print_indented(formatter->indent_level + 1, formatter->indent_size);
-                    snprintf(buffer, sizeof(buffer), "%s", $1);
+                    // Увеличиваем уровень отступа для блока
+                    formatter->indent_level++;
+                    char* indented = create_indented_string(formatter->indent_level, formatter->indent_size, $1);
+                    snprintf(buffer, sizeof(buffer), "%s", indented);
+                    free(indented);
+                    formatter->indent_level--;
                     $$ = strdup(buffer);
                   }
                 ;
@@ -156,8 +175,11 @@ stmt_list       : statement {
                   }
                 | stmt_list SEMICOLON statement {
                     char buffer[2048];
-                    snprintf(buffer, sizeof(buffer), "%s%s\n  ", $1, $2);
-                    strcat(buffer, $3);
+                    // Добавляем точку с запятой к предыдущему оператору
+                    // Затем делаем перенос строки и добавляем отступ перед следующим оператором
+                    char* indented = create_indented_string(formatter->indent_level, formatter->indent_size, $3);
+                    snprintf(buffer, sizeof(buffer), "%s%s\n%s", $1, $2, indented);
+                    free(indented);
                     $$ = strdup(buffer);
                   }
                 ;
@@ -233,35 +255,62 @@ arg_list        : /* пусто */ {
 
 if_stmt         : expr THEN block DOT {
                     char buffer[1024];
-                    snprintf(buffer, sizeof(buffer), "%s %s\n%s\n  %s", $1, $2, $3, $4);
+                    // Форматируем if-then блок с правильными отступами
+                    formatter->indent_level++;
+                    char* dot_indented = create_indented_string(formatter->indent_level, formatter->indent_size, $4);
+                    formatter->indent_level--;
+                    snprintf(buffer, sizeof(buffer), "%s %s\n%s\n%s", $1, $2, $3, dot_indented);
+                    free(dot_indented);
                     $$ = strdup(buffer);
                   }
                 | expr THEN block ELSE block DOT {
                     char buffer[1024];
-                    snprintf(buffer, sizeof(buffer), "%s %s\n%s\n  %s\n%s\n  %s", 
-                             $1, $2, $3, $4, $5, $6);
+                    // Форматируем if-then-else блок с правильными отступами
+                    formatter->indent_level++;
+                    char* else_indented = create_indented_string(formatter->indent_level, formatter->indent_size, $4);
+                    char* dot_indented = create_indented_string(formatter->indent_level, formatter->indent_size, $6);
+                    formatter->indent_level--;
+                    snprintf(buffer, sizeof(buffer), "%s %s\n%s\n%s\n%s\n%s", 
+                             $1, $2, $3, else_indented, $5, dot_indented);
+                    free(else_indented);
+                    free(dot_indented);
                     $$ = strdup(buffer);
                   }
                 ;
 
 while_stmt      : expr LOOP block DOT {
                     char buffer[1024];
-                    snprintf(buffer, sizeof(buffer), "%s %s\n%s\n  %s", $1, $2, $3, $4);
+                    // Форматируем while-loop блок с правильными отступами
+                    formatter->indent_level++;
+                    char* dot_indented = create_indented_string(formatter->indent_level, formatter->indent_size, $4);
+                    formatter->indent_level--;
+                    snprintf(buffer, sizeof(buffer), "%s %s\n%s\n%s", $1, $2, $3, dot_indented);
+                    free(dot_indented);
                     $$ = strdup(buffer);
                   }
                 ;
 
 for_stmt        : expr TILDE expr LOOP IDENTIFIER block DOT {
                     char buffer[1024];
-                    snprintf(buffer, sizeof(buffer), "%s %s %s %s %s\n%s\n  %s", 
-                             $1, $2, $3, $4, $5, $6, $7);
+                    // Форматируем for блок с правильными отступами
+                    formatter->indent_level++;
+                    char* dot_indented = create_indented_string(formatter->indent_level, formatter->indent_size, $7);
+                    formatter->indent_level--;
+                    snprintf(buffer, sizeof(buffer), "%s %s %s %s %s\n%s\n%s", 
+                             $1, $2, $3, $4, $5, $6, dot_indented);
+                    free(dot_indented);
                     $$ = strdup(buffer);
                   }
                 ;
 
 do_while_stmt   : LOOP block WHILE expr DOT {
                     char buffer[1024];
-                    snprintf(buffer, sizeof(buffer), "%s\n%s\n  %s %s %s", $1, $2, $3, $4, $5);
+                    // Форматируем do-while блок с правильными отступами
+                    formatter->indent_level++;
+                    char* while_indented = create_indented_string(formatter->indent_level, formatter->indent_size, $3);
+                    formatter->indent_level--;
+                    snprintf(buffer, sizeof(buffer), "%s\n%s\n%s %s %s", $1, $2, while_indented, $4, $5);
+                    free(while_indented);
                     $$ = strdup(buffer);
                   }
                 ;
