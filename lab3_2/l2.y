@@ -26,7 +26,8 @@
 }
 
 %code provides {
-    #define YY_DECL int l2lex(YYSTYPE* yylvalp, YYLTYPE* yyllocp, void* yyscanner)
+    // Используем L2STYPE и L2LTYPE, так как они генерируются bison с нашим префиксом
+    #define YY_DECL int l2lex(L2STYPE* yylvalp, L2LTYPE* yyllocp, void* yyscanner)
     
     extern int l2lex_init(void** scanner);
     extern int l2lex_destroy(void* scanner);
@@ -40,7 +41,7 @@
 }
 
 %code {
-    int l2error(YYLTYPE* locp, void* scanner, Formatter* formatter, const char* msg);
+    int l2error(L2LTYPE* locp, void* scanner, Formatter* formatter, const char* msg);
     
     void init_formatter(Formatter* formatter, int max_line_length) {
         formatter->indent_level = 0;
@@ -459,7 +460,9 @@ const           : INT_CONST                  { $$ = $1; print_token(formatter, $
 
 %%
 
-int l2error(YYLTYPE* locp, void* scanner, Formatter* formatter, const char* msg) {
+int l2error(L2LTYPE* locp, void* scanner, Formatter* formatter, const char* msg) {
+    (void)scanner;     // Подавляем предупреждение о неиспользуемом параметре
+    (void)formatter;   // Подавляем предупреждение о неиспользуемом параметре
     fprintf(stderr, "Ошибка синтаксиса в строке %d, позиция %d: %s\n", locp->first_line, locp->first_column, msg);
     return 0;
 } 

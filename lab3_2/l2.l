@@ -1,5 +1,5 @@
 %option reentrant noyywrap nounput noinput
-%option bison-bridge
+%option bison-bridge bison-locations
 %option prefix="l2"
 
 %{
@@ -20,15 +20,15 @@
 } while(0)
 
 /* Счетчик строк и колонок */
-static int yycolumn = 1;
+static int column = 1;
 static int line_len = 0;
 
 /* Макрос для обновления позиции */
 #define YY_USER_ACTION do { \
     yylloc->first_line = yylloc->last_line = yylineno; \
-    yylloc->first_column = yycolumn; \
-    yylloc->last_column = yycolumn + yyleng - 1; \
-    yycolumn += yyleng; \
+    yylloc->first_column = column; \
+    yylloc->last_column = column + yyleng - 1; \
+    column += yyleng; \
     line_len += yyleng; \
 } while(0);
 
@@ -46,7 +46,7 @@ IDENTIFIER  \{[^\}]*\}
 %%
 
 {WHITESPACE}+   { /* игнорировать пробелы */ }
-{NEWLINE}       { yycolumn = 1; line_len = 0; return NEWLINE; }
+{NEWLINE}       { column = 1; line_len = 0; return NEWLINE; }
 
 "##".*          { /* однострочный комментарий */ TOKEN(COMMENT); }
 "#("            { /* начало многострочного комментария */ TOKEN(COMMENT); }
