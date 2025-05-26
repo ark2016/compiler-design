@@ -3,9 +3,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include <getopt.h>
-
-// Удаляем определение YYLTYPE, которое конфликтует с L2LTYPE
-// и включаем заголовок сразу
 #include "l2.tab.h"
 
 extern int l2parse(void* scanner, Formatter* formatter);
