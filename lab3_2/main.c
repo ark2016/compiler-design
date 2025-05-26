@@ -5,7 +5,17 @@
 #include <getopt.h>
 #include "l2.tab.h"
 
-extern int l2parse(void* scanner, Formatter* formatter);
+extern int l2parse(void* scanner, Formatter* formatter, MemoryTracker* memory_tracker);
+
+// Глобальная переменная для хранения указателя на трекер памяти
+// Используется для связи между сканером и трекером
+static MemoryTracker* global_memory_tracker = NULL;
+
+// Функция для получения трекера памяти из любого места
+MemoryTracker* get_memory_tracker(void* scanner) {
+    (void)scanner; // Подавляем предупреждение о неиспользуемом параметре
+    return global_memory_tracker;
+}
 
 void print_usage(const char* program_name) {
     printf("Использование: %s [ОПЦИИ] [ФАЙЛ]\n", program_name);
@@ -71,11 +81,24 @@ int main(int argc, char* argv[]) {
     Formatter formatter;
     init_formatter(&formatter, max_line_length);
     
+    // Инициализация трекера памяти
+    MemoryTracker memory_tracker;
+    init_memory_tracker(&memory_tracker);
+    
+    // Устанавливаем глобальную переменную для доступа из лексера
+    global_memory_tracker = &memory_tracker;
+    
     // Запуск анализатора
-    int result = l2parse(scanner, &formatter);
+    int result = l2parse(scanner, &formatter, &memory_tracker);
     
     // Освобождение ресурсов
     l2lex_destroy(scanner);
+    
+    // Освобождаем выделенную память
+    free_all_memory(&memory_tracker);
+    
+    // Сбрасываем глобальную переменную
+    global_memory_tracker = NULL;
     
     if (in_file != stdin) {
         fclose(in_file);

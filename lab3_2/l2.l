@@ -12,9 +12,16 @@
 typedef L2STYPE YYSTYPE;
 typedef L2LTYPE YYLTYPE;
 
+/* Получаем трекер памяти из сканера */
+extern MemoryTracker* get_memory_tracker(void* scanner);
+
 /* Макрос для сохранения текущей лексемы в yylval */
 #define SAVE_TOKEN do { \
-    yylval->string = strdup(yytext); \
+    if (get_memory_tracker(yyscanner)) { \
+        yylval->string = tracked_strdup(get_memory_tracker(yyscanner), yytext); \
+    } else { \
+        yylval->string = strdup(yytext); \
+    } \
 } while(0)
 
 /* Макрос для возврата токена с сохранением лексемы */
