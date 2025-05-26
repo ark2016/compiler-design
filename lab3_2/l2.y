@@ -225,7 +225,7 @@ prim_type       : INT {
                 | BOOL {
                     $$ = $1;
                   }
-                }
+                ;
 
 block           : stmt_list {
                     char buffer[4096] = "";
