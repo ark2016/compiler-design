@@ -61,3 +61,11 @@ make
 ```bash
 ./l2formatter test.l2 > formatted_test.l2
 ``` 
+
+---
+
+проверка на утечку памяти
+
+```
+valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./l2parser test.l2
+```
