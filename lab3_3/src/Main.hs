@@ -99,8 +99,8 @@ printSemError err = do
           "Нет отношения наследования между " ++ sourceType ++ " и " ++ targetType
         CannotDereference _ actualType -> 
           "Невозможно разыменовать тип " ++ actualType
-        LogicalExprExpected _ actualType -> 
-          "Ожидалось логическое выражение, получен тип " ++ show actualType
+        LogicalExprExpected _ actualExprType -> 
+          "Ожидалось логическое выражение, получен тип " ++ show actualExprType
   
   putStrLn $ "Ошибка (" ++ show line ++ "," ++ show col ++ "): " ++ errorMsg
 

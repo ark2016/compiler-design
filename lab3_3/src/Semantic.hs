@@ -46,7 +46,7 @@ data SemError =
     NotPointerType { pos :: (Int, Int), actualType :: String } |
     NoInheritanceRelation { pos :: (Int, Int), sourceType :: String, targetType :: String } |
     CannotDereference { pos :: (Int, Int), actualType :: String } |
-    LogicalExprExpected { pos :: (Int, Int), actualType :: SemType }
+    LogicalExprExpected { pos :: (Int, Int), actualExprType :: SemType }
     deriving (Show)
 
 -- Функция для проверки типов выражения
