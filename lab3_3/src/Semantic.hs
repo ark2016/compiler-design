@@ -411,7 +411,10 @@ analyzeProgram :: AST.Program -> Either SemError ()
 analyzeProgram prog = 
     let initialContext = initContext prog
         stmts = AST.statements prog
-        result = runState (runExceptT (mapM_ (checkStatement . SemLocated (0,0)) stmts)) initialContext
+        -- Присваиваем каждому оператору его последовательный номер вместо (0,0)
+        -- в реальном коде с полной интеграцией с парсером мы бы получали позиции из AST
+        stmtsWithPos = zipWith (\i stmt -> SemLocated (i, 0) stmt) [1..] stmts
+        result = runState (runExceptT (mapM_ checkStatement stmtsWithPos)) initialContext
     in
         case fst result of
             Left err -> Left err
