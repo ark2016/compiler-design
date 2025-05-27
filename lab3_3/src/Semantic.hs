@@ -67,13 +67,15 @@ checkExpr (SemLocated pos expr) = case expr of
             (SemInteger, SemReal) -> return SemBoolean
             (SemReal, SemInteger) -> return SemBoolean
             (SemBoolean, SemBoolean) -> 
-                if rel `elem` [AST.Equal, AST.NotEqual]
-                then return SemBoolean
-                else throwError $ IncompatibleTypes pos (show rel) leftType rightType
+                case rel of 
+                    AST.Equal -> return SemBoolean
+                    AST.NotEqual -> return SemBoolean
+                    _ -> throwError $ IncompatibleTypes pos (show rel) leftType rightType
             (SemPointer _, SemPointer _) -> 
-                if rel `elem` [AST.Equal, AST.NotEqual]
-                then return SemBoolean
-                else throwError $ IncompatibleTypes pos (show rel) leftType rightType
+                case rel of
+                    AST.Equal -> return SemBoolean
+                    AST.NotEqual -> return SemBoolean
+                    _ -> throwError $ IncompatibleTypes pos (show rel) leftType rightType
             _ -> throwError $ IncompatibleTypes pos (show rel) leftType rightType
 
 -- Проверка простого выражения
