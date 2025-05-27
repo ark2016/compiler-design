@@ -4,7 +4,7 @@ import Data.Maybe (isJust, fromJust)
 import qualified Data.Map as Map
 import Control.Monad.State
 import Control.Monad.Except
-import AST
+import qualified AST as AST
 
 -- Типы для семантического анализа
 data SemType = SemInteger 
@@ -50,12 +50,12 @@ data SemError =
     deriving (Show)
 
 -- Функция для проверки типов выражения
-checkExpr :: Located Expression -> SemResult SemType
-checkExpr (Located pos expr) = case expr of
-    SimpleExpr simpleExpr -> checkSimpleExpr (Located pos simpleExpr)
-    Relation leftExpr rel rightExpr -> do
-        leftType <- checkSimpleExpr (Located pos leftExpr)
-        rightType <- checkSimpleExpr (Located pos rightExpr)
+checkExpr :: SemLocated AST.Expression -> SemResult SemType
+checkExpr (SemLocated pos expr) = case expr of
+    AST.SimpleExpr simpleExpr -> checkSimpleExpr (SemLocated pos simpleExpr)
+    AST.Relation leftExpr rel rightExpr -> do
+        leftType <- checkSimpleExpr (SemLocated pos leftExpr)
+        rightType <- checkSimpleExpr (SemLocated pos rightExpr)
         
         -- Проверяем совместимость типов для отношений
         case (leftType, rightType) of
@@ -64,26 +64,26 @@ checkExpr (Located pos expr) = case expr of
             (SemInteger, SemReal) -> return SemBoolean
             (SemReal, SemInteger) -> return SemBoolean
             (SemBoolean, SemBoolean) -> 
-                if rel `elem` [Equal, NotEqual]
+                if rel `elem` [AST.Equal, AST.NotEqual]
                 then return SemBoolean
                 else throwError $ IncompatibleTypes pos (show rel) leftType rightType
             (SemPointer _, SemPointer _) -> 
-                if rel `elem` [Equal, NotEqual]
+                if rel `elem` [AST.Equal, AST.NotEqual]
                 then return SemBoolean
                 else throwError $ IncompatibleTypes pos (show rel) leftType rightType
             _ -> throwError $ IncompatibleTypes pos (show rel) leftType rightType
 
 -- Проверка простого выражения
-checkSimpleExpr :: Located SimpleExpression -> SemResult SemType
-checkSimpleExpr (Located pos (SimpleExpression sign terms)) = do
+checkSimpleExpr :: SemLocated AST.SimpleExpression -> SemResult SemType
+checkSimpleExpr (SemLocated pos (AST.SimpleExpression sign terms)) = do
     -- Если есть знак, то выражение должно быть числовым
     when (isJust sign) $ do
-        termTypes <- mapM (checkTermWithOp . Located pos) terms
+        termTypes <- mapM (checkTermWithOp . SemLocated pos) terms
         unless (all isNumeric termTypes) $
             throwError $ TypeMismatch pos (SemReal) (head termTypes)
     
     -- Проверка всех термов
-    termTypes <- mapM (checkTermWithOp . Located pos) terms
+    termTypes <- mapM (checkTermWithOp . SemLocated pos) terms
     
     -- Если нет термов, возвращаем целый тип по умолчанию
     if null termTypes
@@ -111,15 +111,15 @@ checkSimpleExpr (Located pos (SimpleExpression sign terms)) = do
             | otherwise = t1  -- В случае ошибки просто возвращаем первый тип
 
 -- Проверка терма с операцией
-checkTermWithOp :: Located TermWithOp -> SemResult SemType
-checkTermWithOp (Located pos (TermWithOp term op)) = do
-    termType <- checkTerm (Located pos term)
+checkTermWithOp :: SemLocated AST.TermWithOp -> SemResult SemType
+checkTermWithOp (SemLocated pos (AST.TermWithOp term op)) = do
+    termType <- checkTerm (SemLocated pos term)
     
     case op of
         Nothing -> return termType
-        Just Add -> ensureNumericOrBoolean termType
-        Just Subtract -> ensureNumeric termType
-        Just Or -> ensureBoolean termType
+        Just AST.Add -> ensureNumericOrBoolean termType
+        Just AST.Subtract -> ensureNumeric termType
+        Just AST.Or -> ensureBoolean termType
     
     where
         ensureNumeric t 
@@ -135,24 +135,24 @@ checkTermWithOp (Located pos (TermWithOp term op)) = do
             | otherwise = throwError $ TypeMismatch pos SemBoolean t
 
 -- Проверка терма
-checkTerm :: Located Term -> SemResult SemType
-checkTerm (Located pos (Term factor restFactors)) = do
-    factorType <- checkFactor (Located pos factor)
+checkTerm :: SemLocated AST.Term -> SemResult SemType
+checkTerm (SemLocated pos (AST.Term factor restFactors)) = do
+    factorType <- checkFactor (SemLocated pos factor)
     
     -- Проверяем все дополнительные факторы
     foldM checkRestFactor factorType restFactors
     where
         checkRestFactor accType (op, nextFactor) = do
-            nextType <- checkFactor (Located pos nextFactor)
+            nextType <- checkFactor (SemLocated pos nextFactor)
             
             case op of
-                Multiply -> ensureNumeric accType nextType
-                Divide -> do 
+                AST.Multiply -> ensureNumeric accType nextType
+                AST.Divide -> do 
                     ensureNumeric accType nextType
                     return SemReal  -- Деление всегда дает вещественное число
-                Div -> ensureInteger accType nextType
-                Mod -> ensureInteger accType nextType
-                And -> ensureBoolean accType nextType
+                AST.Div -> ensureInteger accType nextType
+                AST.Mod -> ensureInteger accType nextType
+                AST.And -> ensureBoolean accType nextType
         
         ensureNumeric t1 t2
             | (t1 == SemInteger || t1 == SemReal) && 
@@ -169,21 +169,21 @@ checkTerm (Located pos (Term factor restFactors)) = do
             | otherwise = throwError $ IncompatibleTypes pos "&" t1 t2
 
 -- Проверка фактора
-checkFactor :: Located Factor -> SemResult SemType
-checkFactor (Located pos factor) = case factor of
-    DesignatorFactor designator -> checkDesignator (Located pos designator)
-    IntLiteral _ -> return SemInteger
-    RealLiteral _ -> return SemReal
-    ParenExpression expr -> checkExpr (Located pos expr)
-    NotFactor innerFactor -> do
-        innerType <- checkFactor (Located pos innerFactor)
+checkFactor :: SemLocated AST.Factor -> SemResult SemType
+checkFactor (SemLocated pos factor) = case factor of
+    AST.DesignatorFactor designator -> checkDesignator (SemLocated pos designator)
+    AST.IntLiteral _ -> return SemInteger
+    AST.RealLiteral _ -> return SemReal
+    AST.ParenExpression expr -> checkExpr (SemLocated pos expr)
+    AST.NotFactor innerFactor -> do
+        innerType <- checkFactor (SemLocated pos innerFactor)
         unless (innerType == SemBoolean) $
             throwError $ TypeMismatch pos SemBoolean innerType
         return SemBoolean
 
 -- Проверка пути доступа (идентификатора или поля)
-checkDesignator :: Located Designator -> SemResult SemType
-checkDesignator (Located pos (Designator baseName selectors)) = do
+checkDesignator :: SemLocated AST.Designator -> SemResult SemType
+checkDesignator (SemLocated pos (AST.Designator baseName selectors)) = do
     -- Получаем тип базовой переменной
     ctx <- get
     baseType <- case Map.lookup baseName (varTable ctx) of
@@ -194,13 +194,13 @@ checkDesignator (Located pos (Designator baseName selectors)) = do
     foldM applySelector baseType selectors
     where
         applySelector currentType selector = case selector of
-            FieldSelector fieldName -> case currentType of
+            AST.FieldSelector fieldName -> case currentType of
                 SemRecord typeName _ fields -> 
                     case findField fields fieldName of
                         Just fieldType -> return fieldType
                         Nothing -> throwError $ FieldNotDefined pos typeName errorFieldName
                 _ -> throwError $ NotRecordType pos (show currentType)
-            Dereference -> case currentType of
+            AST.Dereference -> case currentType of
                 SemPointer targetType -> do
                     ctx <- get
                     case Map.lookup targetType (typeTable ctx) of
@@ -215,10 +215,10 @@ checkDesignator (Located pos (Designator baseName selectors)) = do
                 [] -> Nothing
 
 -- Проверка оператора присваивания
-checkAssignment :: Located Statement -> SemResult ()
-checkAssignment (Located pos (Assignment target expr)) = do
-    targetType <- checkDesignator (Located pos target)
-    exprType <- checkExpr (Located pos expr)
+checkAssignment :: SemLocated AST.Statement -> SemResult ()
+checkAssignment (SemLocated pos (AST.Assignment target expr)) = do
+    targetType <- checkDesignator (SemLocated pos target)
+    exprType <- checkExpr (SemLocated pos expr)
     
     -- Проверка совместимости типов
     areAssignable <- checkTypesAssignable targetType exprType
@@ -256,42 +256,42 @@ checkTypeInheritance typeName parentName
         return $ checkInheritance typeName parentName
 
 -- Проверка условия в IF и WHILE
-checkCondition :: Located Expression -> SemResult ()
-checkCondition (Located pos expr) = do
-    condType <- checkExpr (Located pos expr)
+checkCondition :: SemLocated AST.Expression -> SemResult ()
+checkCondition (SemLocated pos expr) = do
+    condType <- checkExpr (SemLocated pos expr)
     unless (condType == SemBoolean) $
         throwError $ LogicalExprExpected pos condType
 
 -- Проверка оператора NEW
-checkNew :: Located Statement -> SemResult ()
-checkNew (Located pos (NewStatement target)) = do
-    targetType <- checkDesignator (Located pos target)
+checkNew :: SemLocated AST.Statement -> SemResult ()
+checkNew (SemLocated pos (AST.NewStatement target)) = do
+    targetType <- checkDesignator (SemLocated pos target)
     case targetType of
         SemPointer _ -> return ()
         _ -> throwError $ NotPointerType pos (show targetType)
 
 -- Проверка statements
-checkStatement :: Located Statement -> SemResult ()
-checkStatement located@(Located pos stmt) = case stmt of
-    Assignment {} -> checkAssignment located
-    IfStatement cond thenBlock elseBlock -> do
-        checkCondition (Located pos cond)
-        mapM_ (checkStatement . Located pos) thenBlock
-        maybe (return ()) (mapM_ (checkStatement . Located pos)) elseBlock
-    WhileStatement cond block -> do
-        checkCondition (Located pos cond)
-        mapM_ (checkStatement . Located pos) block
-    NewStatement {} -> checkNew located
+checkStatement :: SemLocated AST.Statement -> SemResult ()
+checkStatement located@(SemLocated pos stmt) = case stmt of
+    AST.Assignment {} -> checkAssignment located
+    AST.IfStatement cond thenBlock elseBlock -> do
+        checkCondition (SemLocated pos cond)
+        mapM_ (checkStatement . SemLocated pos) thenBlock
+        maybe (return ()) (mapM_ (checkStatement . SemLocated pos)) elseBlock
+    AST.WhileStatement cond block -> do
+        checkCondition (SemLocated pos cond)
+        mapM_ (checkStatement . SemLocated pos) block
+    AST.NewStatement {} -> checkNew located
 
 -- Инициализация контекста семантического анализа
-initContext :: Program -> SemContext
+initContext :: AST.Program -> SemContext
 initContext prog = SemContext {
     typeTable = buildTypeTable prog,
     varTable = buildVarTable prog
 }
 
 -- Построение таблицы типов
-buildTypeTable :: Program -> Map.Map TypeName SemType
+buildTypeTable :: AST.Program -> Map.Map TypeName SemType
 buildTypeTable prog = 
     -- Сначала добавляем базовые типы
     let baseTypes = Map.fromList [
@@ -301,7 +301,7 @@ buildTypeTable prog =
                     ]
         
         -- Добавляем объявленные типы (пока без разрешения полей)
-        declaredTypes = foldr addTypeDecl baseTypes (typeDeclarations prog)
+        declaredTypes = foldr addTypeDecl baseTypes (AST.typeDeclarations prog)
         
         -- Теперь обходим все типы и разрешаем их поля
         resolvedTypes = Map.mapWithKey (resolveType declaredTypes) declaredTypes
@@ -309,24 +309,24 @@ buildTypeTable prog =
         resolvedTypes
     where
         -- Добавление объявления типа в таблицу
-        addTypeDecl :: TypeDeclaration -> Map.Map TypeName SemType -> Map.Map TypeName SemType
-        addTypeDecl (TypeDeclaration name typeDef) typeMap =
+        addTypeDecl :: AST.TypeDeclaration -> Map.Map TypeName SemType -> Map.Map TypeName SemType
+        addTypeDecl (AST.TypeDeclaration name typeDef) typeMap =
             Map.insert name (convertType typeMap typeDef) typeMap
         
         -- Преобразование AST-типа в семантический тип
-        convertType :: Map.Map TypeName SemType -> Type -> SemType
-        convertType _ RealType = SemReal
-        convertType _ IntegerType = SemInteger
-        convertType typeMap (PointerType t) = 
+        convertType :: Map.Map TypeName SemType -> AST.Type -> SemType
+        convertType _ AST.RealType = SemReal
+        convertType _ AST.IntegerType = SemInteger
+        convertType typeMap (AST.PointerType t) = 
             -- Для указателя нам нужно только получить имя типа
             case t of
-                NamedType name -> SemPointer name
+                AST.NamedType name -> SemPointer name
                 _ -> error "Pointer must point to a named type"  -- Это не должно произойти для правильного AST
-        convertType typeMap (RecordType parentName fields) =
+        convertType typeMap (AST.RecordType parentName fields) =
             -- Для записи мы создаем предварительную запись без разрешенных полей
             SemRecord name parentName []
             where name = "ANONYMOUS_RECORD"  -- Для упрощения, но это можно улучшить
-        convertType _ (NamedType name) = 
+        convertType _ (AST.NamedType name) = 
             -- Именованный тип обрабатывается на этапе разрешения
             SemRecord name Nothing []
         
@@ -334,7 +334,7 @@ buildTypeTable prog =
         resolveType :: Map.Map TypeName SemType -> TypeName -> SemType -> SemType
         resolveType typeMap name semType@(SemRecord typeName parentName _) =
             case getTypeDecl name of
-                Just (RecordType parent fields) ->
+                Just (AST.RecordType parent fields) ->
                     -- Преобразуем поля и добавляем поля предка, если он есть
                     let ownFields = concatMap (convertField typeMap) fields
                         parentFields = case parent of
@@ -349,20 +349,20 @@ buildTypeTable prog =
         resolveType _ _ semType = semType
         
         -- Получение объявления типа по имени
-        getTypeDecl :: String -> Maybe Type
+        getTypeDecl :: String -> Maybe AST.Type
         getTypeDecl name = 
-            case filter (\td -> typeName td == name) (typeDeclarations prog) of
-                (TypeDeclaration _ typeDef : _) -> Just typeDef
+            case filter (\td -> AST.typeName td == name) (AST.typeDeclarations prog) of
+                (AST.TypeDeclaration _ typeDef : _) -> Just typeDef
                 [] -> Nothing
         
         -- Преобразование объявления поля
-        convertField :: Map.Map TypeName SemType -> FieldDeclaration -> [FieldInfo]
-        convertField typeMap (FieldDeclaration names fieldType) =
+        convertField :: Map.Map TypeName SemType -> AST.FieldDeclaration -> [FieldInfo]
+        convertField typeMap (AST.FieldDeclaration names fieldType) =
             let semType = case fieldType of
-                            RealType -> SemReal
-                            IntegerType -> SemInteger
-                            PointerType (NamedType name) -> SemPointer name
-                            NamedType name -> 
+                            AST.RealType -> SemReal
+                            AST.IntegerType -> SemInteger
+                            AST.PointerType (AST.NamedType name) -> SemPointer name
+                            AST.NamedType name -> 
                                 case Map.lookup name typeMap of
                                     Just t -> t
                                     Nothing -> error $ "Type not found: " ++ name
@@ -371,41 +371,41 @@ buildTypeTable prog =
                 map (\n -> FieldInfo n semType) names
 
 -- Построение таблицы переменных
-buildVarTable :: Program -> Map.Map String SemType
+buildVarTable :: AST.Program -> Map.Map String SemType
 buildVarTable prog =
     -- Добавляем объявленные переменные
     let typeMap = buildTypeTable prog
     in
-        foldr (addVarDecl typeMap) Map.empty (varDeclarations prog)
+        foldr (addVarDecl typeMap) Map.empty (AST.varDeclarations prog)
     where
         -- Добавление объявления переменной в таблицу
-        addVarDecl :: Map.Map TypeName SemType -> VarDeclaration -> Map.Map String SemType -> Map.Map String SemType
-        addVarDecl typeMap (VarDeclaration names varType) varMap =
+        addVarDecl :: Map.Map TypeName SemType -> AST.VarDeclaration -> Map.Map String SemType -> Map.Map String SemType
+        addVarDecl typeMap (AST.VarDeclaration names varType) varMap =
             let semType = convertVarType typeMap varType
             in
                 foldr (\name -> Map.insert name semType) varMap names
         
         -- Преобразование типа переменной в семантический тип
-        convertVarType :: Map.Map TypeName SemType -> Type -> SemType
-        convertVarType _ RealType = SemReal
-        convertVarType _ IntegerType = SemInteger
-        convertVarType _ (PointerType (NamedType name)) = SemPointer name
-        convertVarType typeMap (NamedType name) = 
+        convertVarType :: Map.Map TypeName SemType -> AST.Type -> SemType
+        convertVarType _ AST.RealType = SemReal
+        convertVarType _ AST.IntegerType = SemInteger
+        convertVarType _ (AST.PointerType (AST.NamedType name)) = SemPointer name
+        convertVarType typeMap (AST.NamedType name) = 
             case Map.lookup name typeMap of
                 Just t -> t
                 Nothing -> error $ "Type not found: " ++ name
         convertVarType _ t = error $ "Unsupported variable type: " ++ show t
 
 -- Главная функция семантического анализа
-analyzeProgram :: Program -> Either SemError ()
+analyzeProgram :: AST.Program -> Either SemError ()
 analyzeProgram prog = 
     let initialContext = initContext prog
-        stmts = statements prog
-        result = runState (runExceptT (mapM_ (checkStatement . Located (0,0)) stmts)) initialContext
+        stmts = AST.statements prog
+        result = runState (runExceptT (mapM_ (checkStatement . SemLocated (0,0)) stmts)) initialContext
     in
         case fst result of
             Left err -> Left err
             Right _ -> Right ()
 
 -- Добавление позиционной информации к AST для сообщений об ошибках
-data Located a = Located { loc :: (Int, Int), unLoc :: a } 
+data SemLocated a = SemLocated { loc :: (Int, Int), unLoc :: a } 
