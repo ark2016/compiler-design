@@ -2,7 +2,7 @@
 
 module Semantic where
 
-import Data.Maybe (isJust, fromJust)
+import Data.Maybe (isJust)
 import qualified Data.Map as Map
 import Control.Monad.State
 import Control.Monad.Except
@@ -153,7 +153,7 @@ checkTerm (SemLocated pos (AST.Term factor restFactors)) = do
             case op of
                 AST.Multiply -> ensureNumeric accType nextType
                 AST.Divide -> do 
-                    ensureNumeric accType nextType
+                    _ <- ensureNumeric accType nextType
                     return SemReal  -- Деление всегда дает вещественное число
                 AST.Div -> ensureInteger accType nextType
                 AST.Mod -> ensureInteger accType nextType
@@ -229,6 +229,7 @@ checkAssignment (SemLocated pos (AST.Assignment target expr)) = do
     areAssignable <- checkTypesAssignable targetType exprType
     unless areAssignable $
         throwError $ TypeMismatch pos targetType exprType
+checkAssignment _ = throwError $ TypeMismatch (0,0) SemInteger SemInteger  -- Этот случай не должен возникать
 
 -- Проверка совместимости типов для присваивания
 checkTypesAssignable :: SemType -> SemType -> SemResult Bool
@@ -274,6 +275,7 @@ checkNew (SemLocated pos (AST.NewStatement target)) = do
     case targetType of
         SemPointer _ -> return ()
         _ -> throwError $ NotPointerType pos (show targetType)
+checkNew _ = throwError $ NotPointerType (0,0) "Invalid statement type"  -- Этот случай не должен возникать
 
 -- Проверка statements
 checkStatement :: SemLocated AST.Statement -> SemResult ()
