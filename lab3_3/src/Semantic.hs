@@ -96,8 +96,11 @@ checkSimpleExpr (SemLocated pos (AST.SimpleExpression sign terms)) = do
         else do
             -- Проверка совместимости типов термов
             let resultType = foldl promoteTypes (head termTypes) (tail termTypes)
-            unless (isValidExprType termTypes) $
-                throwError $ IncompatibleTypes pos "+" (head termTypes) (termTypes !! 1)
+            unless (isValidExprType termTypes) $ 
+                if length termTypes >= 2 then
+                    throwError $ IncompatibleTypes pos "+" (head termTypes) (termTypes !! 1)
+                else 
+                    throwError $ TypeMismatch pos SemBoolean (head termTypes)
             
             return resultType
     where
