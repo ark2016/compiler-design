@@ -289,11 +289,17 @@ checkStatement :: SemLocated AST.Statement -> SemResult ()
 checkStatement located@(SemLocated pos stmt) = case stmt of
     AST.Assignment {} -> checkAssignment located
     AST.IfStatement cond thenBlock elseBlock -> do
-        checkCondition (SemLocated pos cond)
+        -- Проверяем, что условие - это выражение сравнения или логическое выражение
+        condType <- checkExpr (SemLocated pos cond)
+        unless (condType == SemBoolean) $
+            throwError $ LogicalExprExpected pos condType
         mapM_ (checkStatement . SemLocated pos) thenBlock
         maybe (return ()) (mapM_ (checkStatement . SemLocated pos)) elseBlock
     AST.WhileStatement cond block -> do
-        checkCondition (SemLocated pos cond)
+        -- Проверяем, что условие - это выражение сравнения или логическое выражение
+        condType <- checkExpr (SemLocated pos cond)
+        unless (condType == SemBoolean) $
+            throwError $ LogicalExprExpected pos condType
         mapM_ (checkStatement . SemLocated pos) block
     AST.NewStatement {} -> checkNew located
 
@@ -418,11 +424,15 @@ analyzeProgram prog =
         -- Присваиваем каждому оператору его последовательный номер вместо (0,0)
         -- в реальном коде с полной интеграцией с парсером мы бы получали позиции из AST
         stmtsWithPos = zipWith (\i stmt -> SemLocated (i, 0) stmt) [1..] stmts
-        result = runState (runExceptT (mapM_ checkStatement stmtsWithPos)) initialContext
-    in
-        case fst result of
-            Left err -> Left err
-            Right _ -> Right ()
+        
+        -- Анализируем каждый оператор отдельно для более точной диагностики
+        analyzeStatements [] = Right ()
+        analyzeStatements (stmt:rest) = 
+            case runState (runExceptT (checkStatement stmt)) initialContext of
+                (Left err, _) -> Left err
+                (Right _, _) -> analyzeStatements rest
+                
+    in analyzeStatements stmtsWithPos
 
 -- Добавление позиционной информации к AST для сообщений об ошибках
 data SemLocated a = SemLocated { loc :: (Int, Int), unLoc :: a } 
