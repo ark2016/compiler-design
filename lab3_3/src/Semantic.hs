@@ -241,11 +241,15 @@ checkTypesAssignable SemReal SemReal = return True
 checkTypesAssignable SemReal SemInteger = return True  -- Целое может быть присвоено вещественному
 checkTypesAssignable SemBoolean SemBoolean = return True
 
+-- Записи точно одного типа всегда совместимы
+checkTypesAssignable (SemRecord name1 _ _) (SemRecord name2 _ _) | name1 == name2 = return True
+
 -- Указатели совместимы, если имеют иерархическую связь
 checkTypesAssignable (SemPointer t1) (SemPointer t2) = checkTypeInheritance t2 t1
 
--- Записи совместимы, если имеют иерархическую связь
-checkTypesAssignable (SemRecord t1 _ _) (SemRecord t2 _ _) = checkTypeInheritance t2 t1
+-- Записи совместимы, если имеют иерархическую связь (для разных типов)
+checkTypesAssignable r1@(SemRecord t1 _ _) r2@(SemRecord t2 _ _) = 
+    if t1 /= t2 then checkTypeInheritance t2 t1 else return True
 
 checkTypesAssignable _ _ = return False
 
