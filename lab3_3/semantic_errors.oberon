@@ -1,0 +1,57 @@
+TYPE
+  Point = RECORD
+    x, y : REAL;
+  END;
+  Shape = RECORD
+    center : Point;
+    color : INTEGER;
+    next : POINTER TO Shape;
+  END;
+  Circle = RECORD(Shape)
+    radius : REAL;
+  END;
+  Rectangle = RECORD(Shape)
+    width, height : REAL;
+  END;
+
+VAR
+  p1, p2 : Point;
+  s : Shape;
+  c : Circle;
+  r : Rectangle;
+  ps : POINTER TO Shape;
+  pc : POINTER TO Circle;
+  pr : POINTER TO Rectangle;
+BEGIN
+  (* Ошибка: обращение к несуществующему полю *)
+  p1.z := 10;
+  
+  (* Ошибка: несоответствие типов *)
+  p1.x := TRUE;
+  
+  (* Ошибка: использование неопределенной переменной *)
+  p3.x := 5;
+  
+  (* Ошибка: присвоение несовместимых типов записей *)
+  p1 := s;
+  
+  (* Ошибка: присвоение несовместимых типов указателей *)
+  pc := ps;
+  
+  (* Ошибка: разыменование не-указателя *)
+  p1^ := p2;
+  
+  (* Ошибка: логическое выражение в условии *)
+  IF p1.x THEN
+    p1.x := 0;
+  END;
+  
+  (* Ошибка: несовместимые типы в выражении *)
+  p1.x := p1.x + TRUE;
+  
+  (* Ошибка: обращение к полю не-записи *)
+  pc.x := 10;
+  
+  (* Ошибка: NEW для не-указателя *)
+  NEW(p1);
+END. 
