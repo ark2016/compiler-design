@@ -85,8 +85,8 @@ printSemError err = do
           "Тип не определен: " ++ typeName
         VarNotDefined _ varName -> 
           "Переменная не определена: " ++ varName
-        FieldNotDefined _ recordType fieldName -> 
-          "Поле '" ++ fieldName ++ "' не определено в типе " ++ recordType
+        FieldNotDefined _ recordType errorFieldName -> 
+          "Поле '" ++ errorFieldName ++ "' не определено в типе " ++ recordType
         TypeMismatch _ expected actual -> 
           "Несоответствие типов: ожидался " ++ show expected ++ ", получен " ++ show actual
         IncompatibleTypes _ op leftType rightType -> 

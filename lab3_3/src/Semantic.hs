@@ -39,7 +39,7 @@ type SemResult = ExceptT SemError (State SemContext)
 data SemError = 
     TypeNotDefined { pos :: (Int, Int), typeName :: String } |
     VarNotDefined { pos :: (Int, Int), varName :: String } |
-    FieldNotDefined { pos :: (Int, Int), recordType :: String, fieldName :: String } |
+    FieldNotDefined { pos :: (Int, Int), recordType :: String, errorFieldName :: String } |
     TypeMismatch { pos :: (Int, Int), expected :: SemType, actual :: SemType } |
     IncompatibleTypes { pos :: (Int, Int), op :: String, leftType :: SemType, rightType :: SemType } |
     NotRecordType { pos :: (Int, Int), actualType :: String } |
@@ -198,7 +198,7 @@ checkDesignator (Located pos (Designator baseName selectors)) = do
                 SemRecord typeName _ fields -> 
                     case findField fields fieldName of
                         Just fieldType -> return fieldType
-                        Nothing -> throwError $ FieldNotDefined pos typeName fieldName
+                        Nothing -> throwError $ FieldNotDefined pos typeName errorFieldName
                 _ -> throwError $ NotRecordType pos (show currentType)
             Dereference -> case currentType of
                 SemPointer targetType -> do
