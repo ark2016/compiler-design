@@ -1,9 +1,12 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Semantic where
 
 import Data.Maybe (isJust, fromJust)
 import qualified Data.Map as Map
 import Control.Monad.State
 import Control.Monad.Except
+import Control.Monad (when, unless, foldM)
 import qualified AST as AST
 
 -- Типы для семантического анализа
@@ -198,7 +201,7 @@ checkDesignator (SemLocated pos (AST.Designator baseName selectors)) = do
                 SemRecord typeName _ fields -> 
                     case findField fields fieldName of
                         Just fieldType -> return fieldType
-                        Nothing -> throwError $ FieldNotDefined pos typeName errorFieldName
+                        Nothing -> throwError $ FieldNotDefined pos typeName fieldName
                 _ -> throwError $ NotRecordType pos (show currentType)
             AST.Dereference -> case currentType of
                 SemPointer targetType -> do
