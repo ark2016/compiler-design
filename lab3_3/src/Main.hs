@@ -10,7 +10,7 @@ import Control.Monad (forM_, unless)
 import AST
 import Lexer
 import Parser
-import Semantic
+import qualified Semantic
 
 -- Основная функция программы
 main :: IO ()
@@ -46,7 +46,7 @@ parseAndAnalyzeFile input =
         Left err -> printError (head err)
         Right ast -> do
           -- Выполняем семантический анализ
-          case analyzeProgram ast of
+          case Semantic.analyzeProgram ast of
             Left semError -> printSemError semError
             Right () -> do
               putStrLn "Программа корректна."
@@ -69,7 +69,7 @@ parseAndAnalyzeFileWithDebug input =
           putStrLn (formatAst (show ast))
           
           -- Выполняем семантический анализ
-          case analyzeProgram ast of
+          case Semantic.analyzeProgram ast of
             Left semError -> do
               putStrLn "\nОбнаружена семантическая ошибка:"
               printSemError semError
@@ -77,29 +77,29 @@ parseAndAnalyzeFileWithDebug input =
               putStrLn "\nПрограмма корректна."
 
 -- Функция для вывода семантической ошибки
-printSemError :: SemError -> IO ()
+printSemError :: Semantic.SemError -> IO ()
 printSemError err = do
-  let (line, col) = pos err
+  let (line, col) = Semantic.pos err
       errorMsg = case err of
-        TypeNotDefined _ typeName -> 
+        Semantic.TypeNotDefined _ typeName -> 
           "Тип не определен: " ++ typeName
-        VarNotDefined _ varName -> 
+        Semantic.VarNotDefined _ varName -> 
           "Переменная не определена: " ++ varName
-        FieldNotDefined _ recordType errorFieldName -> 
+        Semantic.FieldNotDefined _ recordType errorFieldName -> 
           "Поле '" ++ errorFieldName ++ "' не определено в типе " ++ recordType
-        TypeMismatch _ expected actual -> 
+        Semantic.TypeMismatch _ expected actual -> 
           "Несоответствие типов: ожидался " ++ show expected ++ ", получен " ++ show actual
-        IncompatibleTypes _ op leftType rightType -> 
+        Semantic.IncompatibleTypes _ op leftType rightType -> 
           "Несовместимые типы для операции '" ++ op ++ "': " ++ show leftType ++ " и " ++ show rightType
-        NotRecordType _ actualType -> 
+        Semantic.NotRecordType _ actualType -> 
           "Ожидался тип запись, получен " ++ actualType
-        NotPointerType _ actualType -> 
+        Semantic.NotPointerType _ actualType -> 
           "Ожидался указатель, получен " ++ actualType
-        NoInheritanceRelation _ sourceType targetType -> 
+        Semantic.NoInheritanceRelation _ sourceType targetType -> 
           "Нет отношения наследования между " ++ sourceType ++ " и " ++ targetType
-        CannotDereference _ actualType -> 
+        Semantic.CannotDereference _ actualType -> 
           "Невозможно разыменовать тип " ++ actualType
-        LogicalExprExpected _ actualExprType -> 
+        Semantic.LogicalExprExpected _ actualExprType -> 
           "Ожидалось логическое выражение, получен тип " ++ show actualExprType
   
   putStrLn $ "Ошибка (" ++ show line ++ "," ++ show col ++ "): " ++ errorMsg
@@ -193,7 +193,7 @@ parseFileWithRecovery input =
           putStrLn "Абстрактное синтаксическое дерево построено."
           
           -- Выполняем семантический анализ
-          case analyzeProgram ast of
+          case Semantic.analyzeProgram ast of
             Left semError -> do
               putStrLn "\nОбнаружена семантическая ошибка:"
               printSemError semError
