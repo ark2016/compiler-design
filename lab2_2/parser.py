@@ -212,7 +212,6 @@ NAlternatives_NonEmpty |= NRuleAlternative, N_PipeAlternative_Rest, lambda alt, 
 N_PipeAlternative_Rest |= PIPE, NRuleAlternative, N_PipeAlternative_Rest, lambda alt, rest: [alt] + rest # PIPE (None) filtered
 N_PipeAlternative_Rest |= lambda: [] # Пустой хвост
 
-# NRuleAlternative = NRuleElement* (SLASH ID)?;
 # NRuleElement_List = NRuleElement* (используется для альтернатив)
 NRuleElement_List |= NRuleElement, NRuleElement_List, lambda h, t: [h] + t
 NRuleElement_List |= lambda: [] # Пустой список элементов
@@ -247,7 +246,7 @@ parser.add_skipped_domain('//[^\n]*')
 def parse_spec(text):
     """Разбор текста спецификации"""
     try:
-        return parser.parse_earley(text)
+        return parser.parse(text)
     except pe.Error as e:
         print(f"Ошибка разбора: {e.message}")
         print(f"  Позиция: {e.pos if hasattr(e, 'pos') else 'N/A'}")
