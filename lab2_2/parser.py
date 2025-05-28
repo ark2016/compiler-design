@@ -2,6 +2,7 @@ import abc
 import enum
 import typing
 from dataclasses import dataclass
+from pprint import pprint
 
 import sys
 import os
@@ -271,7 +272,9 @@ if __name__ == "__main__":
             spec = parse_spec(spec_text)
             if spec:
                 print("--- Разбор успешно завершен! ---")
-                print("\nРезультаты разбора спецификации:")
+                print("Синтаксическое дерево (AST):")
+                pprint(spec)
+                print("Результаты разбора спецификации:")
                 print("===============================")
                 print(f"Имя класса: {spec.class_name}")
                 
