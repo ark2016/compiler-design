@@ -5,11 +5,11 @@ from dataclasses import dataclass
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'parser_edsl_v2')) # Ensure this path is correct for your setup
-import parser_edsl as pe # Assuming this is the original parser_edsl.py
+sys.path.append(os.path.join(os.path.dirname(__file__), 'parser_edsl_v2'))
+import parser_edsl as pe 
 import re
 
-# Определение классов АСД (Абстрактного Синтаксического Дерева)
+# TypeName -> ID | ID LBRACKET RBRACKET
 @dataclass
 class TypeName:
     name: str
@@ -18,47 +18,57 @@ class TypeName:
     def __str__(self):
         return f"{self.name}{'[]' if self.is_array else ''}"
 
+# TypeMapping -> identifier_list : TypeName ;
 @dataclass
 class TypeMapping:
     names: list[str]
     type: TypeName
 
+# ParamType -> TypeName
 @dataclass
 class ParamType:
     type_name: TypeName
 
+# MethodSignature -> TypeName identifier ( [ParamType_list] ) ;
 @dataclass
 class MethodSignature:
     return_type: TypeName
     name: str
     parameters: list[ParamType]
 
+# RuleElement (base class)
 @dataclass
 class RuleElement:
     pass
 
+# RuleElement -> ID
 @dataclass
 class IdRuleElement(RuleElement):
     name: str
 
+# RuleElement -> %rep RuleElement
 @dataclass
 class RepRuleElement(RuleElement):
     element: RuleElement
 
+# RuleElement -> ( Alternatives )
 @dataclass
 class ParenRuleElement(RuleElement):
     alternatives: list['RuleAlternative'] # Forward declaration as string
 
+# RuleAlternative -> RuleElement+ [ / identifier ] | / identifier
 @dataclass
 class RuleAlternative:
     elements: list[RuleElement]
     action: str = None
 
+# GrammarRule -> identifier = Alternatives ;
 @dataclass
 class GrammarRule:
     name: str
     alternatives: list[RuleAlternative]
 
+# Spec -> ClassSection TokensSection TypesSection MethodsSection GrammarSection AxiomSection %end
 @dataclass
 class Spec:
     class_name: str
