@@ -191,7 +191,7 @@ parseFileWithRecovery input =
         Right ast -> do
           putStrLn "Синтаксический анализ успешно завершен."
           putStrLn "Абстрактное синтаксическое дерево построено."
-          
+
           -- Выполняем семантический анализ
           case Semantic.analyzeProgram ast of
             Left semError -> do

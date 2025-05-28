@@ -1,8 +1,0 @@
-%class MyParser
-%tokens ID NUMBER
-%types A: TypeA;
-%methods void dummy();
-%grammar
-Spec = A;
-%axiom Spec;
-%end
