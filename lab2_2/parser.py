@@ -147,34 +147,27 @@ NRuleElement_PlusList = pe.NonTerminal('NRuleElement_PlusList')
 # ========================================================================
 
 # Правила грамматики
-# KW_END attr (None) is filtered
 NSpec |= NClassSection, NTokensSection, NTypesSection, NMethodsSection, NGrammarSection, NAxiomSection, KW_END, \
          lambda cls, tokens, types, methods, grammar, axiom: Spec(cls, tokens, types, methods, grammar, axiom)
 
-# KW_CLASS attr (None) is filtered
 NClassSection |= KW_CLASS, ID, lambda name: name
 
-# KW_TOKENS attr (None) is filtered
 NTokensSection |= KW_TOKENS, NSpaceSeparatedIdList_NonEmpty, lambda tokens: tokens
 
 # --- Секции с возможно пустыми списками ---
-# KW_TYPES attr (None) filtered
 NTypesSection |= KW_TYPES, NTypeMapping_List, lambda mappings: mappings
 NTypeMapping_List |= NTypeMapping, NTypeMapping_List, lambda h, t: [h] + t
-NTypeMapping_List |= lambda: [] # Пустой список
+NTypeMapping_List |= lambda: [] 
 
-# KW_METHODS attr (None) filtered
 NMethodsSection |= KW_METHODS, NMethodSignature_List, lambda sigs: sigs
 NMethodSignature_List |= NMethodSignature, NMethodSignature_List, lambda h, t: [h] + t
-NMethodSignature_List |= lambda: [] # Пустой список
+NMethodSignature_List |= lambda: [] 
 
-# KW_GRAMMAR attr (None) filtered
 NGrammarSection |= KW_GRAMMAR, NGrammarRule_List, lambda rules_list: rules_list
 NGrammarRule_List |= NGrammarRule, NGrammarRule_List, lambda h, t: [h] + t
-NGrammarRule_List |= lambda: [] # Пустой список
+NGrammarRule_List |= lambda: []
 
 
-# KW_AXIOM (None) and SEMICOLON (None) attrs are filtered
 NAxiomSection |= KW_AXIOM, ID, SEMICOLON, lambda axiom: axiom
 
 
@@ -182,45 +175,41 @@ NAxiomSection |= KW_AXIOM, ID, SEMICOLON, lambda axiom: axiom
 
 # NSpaceSeparatedIdList_NonEmpty = ID+
 NSpaceSeparatedIdList_NonEmpty |= ID, lambda id_val: [id_val]
-NSpaceSeparatedIdList_NonEmpty |= ID, NSpaceSeparatedIdList_NonEmpty, lambda id_val, rest: [id_val] + rest #Праворекурсивный для (ID ID+)
+NSpaceSeparatedIdList_NonEmpty |= ID, NSpaceSeparatedIdList_NonEmpty, lambda id_val, rest: [id_val] + rest 
 
 # NCommaSeparatedIdList_NonEmpty = ID (COMMA ID)*
 NCommaSeparatedIdList_NonEmpty |= ID, N_CommaId_Rest, lambda id_val, rest_ids: [id_val] + rest_ids
-N_CommaId_Rest |= COMMA, ID, N_CommaId_Rest, lambda id_val, rest: [id_val] + rest # COMMA (None) filtered
-N_CommaId_Rest |= lambda: [] # Пустой хвост
+N_CommaId_Rest |= COMMA, ID, N_CommaId_Rest, lambda id_val, rest: [id_val] + rest
+N_CommaId_Rest |= lambda: [] 
 
 # NTypeMapping = NCommaSeparatedIdList_NonEmpty COLON NTypeName SEMICOLON;
-# COLON (None), SEMICOLON (None) attrs filtered
 NTypeMapping |= NCommaSeparatedIdList_NonEmpty, COLON, NTypeName, SEMICOLON, \
                 lambda names, type_name: TypeMapping(names, type_name)
 
 # NTypeName = ID (LBRACKET RBRACKET)?;
 NTypeName |= ID, lambda id_val: TypeName(id_val)
-# LBRACKET (None), RBRACKET (None) attrs filtered
 NTypeName |= ID, LBRACKET, RBRACKET, lambda id_val: TypeName(id_val, True)
 
 # NMethodSignature = NTypeName ID LPAREN NParamList? RPAREN SEMICOLON;
-# LPAREN (None), RPAREN (None), SEMICOLON (None) attrs filtered
 NMethodSignature |= NTypeName, ID, LPAREN, NParamList, RPAREN, SEMICOLON, \
                     lambda return_type, name, params: MethodSignature(return_type, name, params)
 
-# NParamList = NTypeName (COMMA NTypeName)*; (может быть пустым, если NParamList не было вообще)
+# NParamList = NTypeName (COMMA NTypeName)*; 
 NParamList |= NTypeName, N_CommaTypeName_Rest, lambda type_name, rest_params: [ParamType(type_name)] + rest_params
-NParamList |= lambda: [] # Пустой список параметров
+NParamList |= lambda: [] 
 
-N_CommaTypeName_Rest |= COMMA, NTypeName, N_CommaTypeName_Rest, lambda type_name, rest: [ParamType(type_name)] + rest # COMMA (None) filtered
-N_CommaTypeName_Rest |= lambda: [] # Пустой хвост
+N_CommaTypeName_Rest |= COMMA, NTypeName, N_CommaTypeName_Rest, lambda type_name, rest: [ParamType(type_name)] + rest 
+N_CommaTypeName_Rest |= lambda: []
 
 # NGrammarRule = ID ASSIGN NAlternatives_NonEmpty SEMICOLON;
-# ASSIGN (None), SEMICOLON (None) attrs filtered
 NGrammarRule |= ID, ASSIGN, NAlternatives_NonEmpty, SEMICOLON, \
                 lambda name, alternatives: GrammarRule(name, alternatives)
 
 # NAlternatives_NonEmpty = NRuleAlternative (PIPE NRuleAlternative)*;
 NAlternatives_NonEmpty |= NRuleAlternative, N_PipeAlternative_Rest, lambda alt, rest_alts: [alt] + rest_alts
 
-N_PipeAlternative_Rest |= PIPE, NRuleAlternative, N_PipeAlternative_Rest, lambda alt, rest: [alt] + rest # PIPE (None) filtered
-N_PipeAlternative_Rest |= lambda: [] # Пустой хвост
+N_PipeAlternative_Rest |= PIPE, NRuleAlternative, N_PipeAlternative_Rest, lambda alt, rest: [alt] + rest 
+N_PipeAlternative_Rest |= lambda: [] 
 
 # NRuleElement_List = NRuleElement* (используется для альтернатив)
 NRuleElement_List |= NRuleElement, NRuleElement_List, lambda h, t: [h] + t
@@ -229,21 +218,18 @@ NRuleElement_List |= lambda: [] # Пустой список элементов
 # NRuleElement_PlusList для NRuleElement+
 NRuleElement_PlusList |= NRuleElement, NRuleElement_List, lambda h, t: [h] + t # Один или более элементов
 
-# Пересмотренный NRuleAlternative на основе grammar.md и избегая неоднозначности с пустым NRuleElement_List
-# NRuleAlternative -> NRuleElement_NonEmptyList                       // Elements, no action
-#                  | NRuleElement_NonEmptyList SLASH ID              // Elements, with action
-#                  | SLASH ID                                        // No elements, with action
+# NRuleAlternative -> NRuleElement_NonEmptyList                       
+#                  | NRuleElement_NonEmptyList SLASH ID              
+#                  | SLASH ID                                        
 NRuleAlternative |= NRuleElement_PlusList, SLASH, ID, lambda elements, action_id: RuleAlternative(elements, action_id) # SLASH (None) filtered
 NRuleAlternative |= NRuleElement_PlusList, lambda elements: RuleAlternative(elements)
-NRuleAlternative |= SLASH, ID, lambda action_id: RuleAlternative([], action_id) # SLASH (None) filtered
+NRuleAlternative |= SLASH, ID, lambda action_id: RuleAlternative([], action_id) 
 
 
 # NRuleElement = ID | LPAREN NAlternatives_NonEmpty RPAREN | KW_REP NRuleElement;
 NRuleElement |= ID, lambda id_val: IdRuleElement(id_val)
-# LPAREN (None), RPAREN (None) attrs filtered
 NRuleElement |= LPAREN, NAlternatives_NonEmpty, RPAREN, \
                 lambda alternatives: ParenRuleElement(alternatives)
-# KW_REP attr (None) is filtered
 NRuleElement |= KW_REP, NRuleElement, lambda elem: RepRuleElement(elem)
 
 
