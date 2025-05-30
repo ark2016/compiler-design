@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-"""
-Основная точка входа для семантического анализатора языка спецификации грамматик.
-"""
 import sys
 import os
 from parser import parse_spec

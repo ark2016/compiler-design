@@ -1,5 +1,3 @@
-# Этот файл будет содержать логику семантического анализатора. 
-
 import sys
 import os
 from dataclasses import dataclass
