@@ -243,7 +243,7 @@ parser.add_skipped_domain('//[^\n]*')
 def parse_spec(text):
     """Разбор текста спецификации"""
     try:
-        return parser.parse(text)
+        return parser.parse_earley(text)
     except pe.Error as e:
         print(f"Ошибка разбора: {e.message}")
         print(f"  Позиция: {e.pos if hasattr(e, 'pos') else 'N/A'}")
