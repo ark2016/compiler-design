@@ -1,0 +1,76 @@
+TYPE
+  Point = RECORD
+    x, y : REAL;
+  END;
+  Shape = RECORD
+    center : Point;
+    color : INTEGER;
+    next : POINTER TO Shape;
+  END;
+  Circle = RECORD(Shape)
+    radius : REAL;
+  END;
+  Rectangle = RECORD(Shape)
+    width, height : REAL;
+  END;
+
+VAR
+  p1, p2 : Point;
+  s : Shape;
+  c : Circle;
+  r : Rectangle;
+  ps : POINTER TO Shape;
+  pc : POINTER TO Circle;
+  pr : POINTER TO Rectangle;
+BEGIN
+  (* Тестирование различных типов выражений и операторов *)
+  
+  (* Присваивания и доступ к полям *)
+  p1.x := 10;
+  p1.y := 3.5;
+  s.center := p1;
+  s.color := 100500;
+  
+  (* Присваивание совместимых типов (с наследованием) *)
+  c := s;
+  c.radius := 7;
+  
+  (* Цепочки доступа к полям *)
+  r.center.x := 5.2;
+  r.center.y := 2.5;
+  r.color := 500100;
+  r.width := 4.5;
+  r.height := 5.4;
+  
+  (* Указатели и оператор NEW *)
+  NEW(pr);
+  pr^ := r;  (* Разыменование указателя в левой части присваивания *)
+  ps := pr;  (* Присваивание совместимых указателей (с наследованием) *)
+  NEW(pc);
+  pc^ := c;
+  
+  (* Сложные выражения с разными приоритетами операций *)
+  ps.next := pc;
+  
+  (* Цикл WHILE с условием и выражениями *)
+  WHILE p1.x * p1.y < 77777 DO
+    p1.x := p1.x * 1.5;
+    p1.y := p1.y * 2.5;
+  END;
+  
+  (* Условный оператор IF с выражениями *)
+  IF p1.x > pc^.radius THEN
+    p2 := p1;
+    p1 := pc^.center;
+  ELSE
+    p2 := pr^.center;
+  END;
+  
+  (* Сложное выражение с разными приоритетами операций *)
+  p1.x := (p1.x + p2.x) * (c.radius / 2.0) - 1.0;
+  
+  (* Логические операции *)
+  IF (p1.x > 0.0) AND (p1.y > 0.0) OR NOT (c.radius = 0.0) THEN
+    p1.x := 0.0;
+  END;
+END. 

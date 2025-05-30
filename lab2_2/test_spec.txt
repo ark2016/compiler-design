@@ -74,6 +74,6 @@
   Factor = NUMBER | VAR / deref | LBRAC Expr RBRAC;
 
 %axiom
-  Program
+  Program;
 
 %end

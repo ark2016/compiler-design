@@ -1,0 +1,25 @@
+%class
+  SimpleParser
+
+%tokens
+  NUMBER PLUS MINUS STAR DIV LPAREN RPAREN
+
+%types
+  Expr, Term, Factor, NUMBER: ArithmExpr;
+  PLUS, MINUS, STAR, DIV: ArithmOp;
+  LPAREN, RPAREN: Bracket;
+
+%methods
+  ArithmExpr neg_op(ArithmOp, ArithmExpr);
+  ArithmExprChunk[] chunk(ArithmOp, ArithmExpr);
+  ArithmExpr bin_op(ArithmExpr, ArithmExprChunk[]);
+
+%grammar
+  Expr = Term %rep ((PLUS | MINUS) Term / chunk) / bin_op;
+  Term = Factor %rep ((STAR | DIV) Factor / chunk) / bin_op;
+  Factor = NUMBER | LPAREN Expr RPAREN | MINUS Factor / neg_op;
+
+%axiom
+  Expr;
+
+%end 

@@ -1,0 +1,62 @@
+cabal-version:       3.0
+
+-- | Recursive‑Descent Oberon subset parser
+name:                recursion-descent
+version:             0.1.0.0
+license:             MIT
+license-file:        LICENSE
+maintainer:          Your Name <you@example.com>
+category:            Compilers
+build-type:          Simple
+extra-source-files:  CHANGELOG.md
+
+-----------------------------------------------------------------------------
+-- Library section exposes the reusable parsing API (AST, Lexer, Parser)
+-----------------------------------------------------------------------------
+library
+  -- All source lives under src/ to keep root tidy.
+  hs-source-dirs:      src
+  exposed-modules:
+      AST
+      Lexer
+      Parser
+      Semantic
+  -- Non-exported internal helpers (currently none)
+  other-modules:
+  default-language:    Haskell2010
+  -- Widely used pragmatic extensions
+  default-extensions:  RecordWildCards
+                       NamedFieldPuns
+                       LambdaCase
+                       DeriveFunctor
+                       DeriveFoldable
+                       DeriveTraversable
+  build-depends:       base                 >=4.14 && <4.20,
+                       containers           >=0.6 && <0.7,
+                       mtl                  >=2.2 && <2.4,
+                       transformers         >=0.5 && <0.7
+  -- Treat almost all warnings as errors, but silence the harmless
+  -- "unused pattern‑alias" warning that appears in Lexer.hs until the
+  -- source is cleaned up.
+  ghc-options:         -Wall -Werror -Wno-unused-matches -O2
+
+-----------------------------------------------------------------------------
+-- Executable that parses a file supplied on the CLI. Mirrors Main.hs
+-----------------------------------------------------------------------------
+executable oberon-parser
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  other-modules:       AST
+  		       Lexer
+		       Parser
+  default-language:    Haskell2010
+  default-extensions:  RecordWildCards
+                       NamedFieldPuns
+  build-depends:       base,
+                       recursion-descent,
+                       containers,
+                       mtl,
+                       transformers
+  ghc-options:         -Wall
+
+
